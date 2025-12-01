@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界歴史構造化リスト</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
+        h1 { color: #004d40; border-bottom: 3px solid #b2dfdb; padding-bottom: 10px; margin-bottom: 30px; text-align: center; }
+        /* ダウンロードボタンのスタイル */
+        #download-container {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        #download-btn {
+            background-color: #ff9800; /* オレンジ */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none; /* <a>要素として使用する場合 */
+            display: inline-block;
+        }
+        #download-btn:hover {
+            background-color: #e68900;
+        }
+        
+        /* リスト表示のスタイルは変更なし */
+        .region-card { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin-bottom: 25px; padding: 20px; }
+        .region-header { background-color: #4db6ac; color: white; padding: 10px 15px; border-radius: 6px 6px 0 0; margin: -20px -20px 20px -20px; font-size: 1.5em; font-weight: bold; }
+        .period-section { margin-bottom: 20px; border-left: 4px solid #009688; padding-left: 15px; }
+        .period-upper { font-size: 1.2em; color: #00796b; margin-bottom: 10px; font-weight: bold; }
+        .middle-entities-list { list-style-type: disc; margin-left: 20px; padding-left: 0; line-height: 1.6; display: flex; flex-wrap: wrap; }
+        .middle-entities-list li { margin-right: 15px; margin-bottom: 5px; background-color: #e0f2f1; padding: 4px 8px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <h1>世界歴史構造化リスト</h1>
+    <div id="download-container">
+        </div>
+    <div id="history-list-container">
+        <p>データを読み込み中...</p>
+    </div>
+
+    <script>
+        const container = document.getElementById('history-list-container');
+        const downloadContainer = document.getElementById('download-container');
+        const totalFiles = 9;
+        const fileBaseName = 'no';
+        const fileExtension = '.json';
+        const basePath = './';
+
+        // 複数のJSONファイルを非同期で読み込み、統合する関数
+        async function loadAndIntegrateJson() {
+            const fetchPromises = [];
+            
+            for (let i = 1; i <= totalFiles; i++) {
+                const fileName = `${fileBaseName}${i}${fileExtension}`;
+                const url = basePath + fileName;
+                
+                fetchPromises.push(
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`ファイル ${fileName} の読み込みに失敗しました (${response.status})`);
+                            }
+                            return response.json();
+                        })
+                );
+            }
+
+            try {
+                const allJsonData = await Promise.all(fetchPromises);
+                let integratedRegions = [];
+
+                allJsonData.forEach(data => {
+                    if (data && data.history_structured_list && data.history_structured_list.regions) {
+                        integratedRegions.push(...data.history_structured_list.regions);
+                    }
+                });
+
+                const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
+
+                // 統合されたデータを表示し、ダウンロードボタンを生成する
+                displayData(finalIntegratedData);
+
+            } catch (error) {
+                container.innerHTML = `<p style="color: red;">エラーが発生しました: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+
+        // データをHTMLに出力し、ダウンロードボタンを生成する関数
+        function displayData(integratedData) {
+            container.innerHTML = ''; // "読み込み中"メッセージをクリア
+            const regions = integratedData.history_structured_list.regions;
+
+            // --- 1. ダウンロードボタンの生成 ---
+            const jsonString = JSON.stringify(integratedData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.id = 'download-btn';
+            downloadLink.href = url;
+            downloadLink.download = 'integrated_world_history.json'; // ダウンロード時のファイル名
+            downloadLink.textContent = '📥 統合JSONをダウンロード';
+            
+            downloadContainer.innerHTML = '';
+            downloadContainer.appendChild(downloadLink);
+
+            // --- 2. リスト表示（前のロジックと同じ） ---
+            regions.forEach(region => {
+                const regionCard = document.createElement('div');
+                regionCard.className = 'region-card';
+
+                const regionHeader = document.createElement('div');
+                regionHeader.className = 'region-header';
+                regionHeader.textContent = `地域 ${region.region_id}: ${region.region_name}`;
+                regionCard.appendChild(regionHeader);
+
+                region.periods.forEach(period => {
+                    const periodSection = document.createElement('div');
+                    periodSection.className = 'period-section';
+
+                    const upperLevel = document.createElement('div');
+                    upperLevel.className = 'period-upper';
+                    upperLevel.textContent = period.upper_level;
+                    periodSection.appendChild(upperLevel);
+
+                    const entitiesList = document.createElement('ul');
+                    entitiesList.className = 'middle-entities-list';
+
+                    period.middle_level_entities.forEach(entity => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = entity;
+                        entitiesList.appendChild(listItem);
+                    });
+
+                    periodSection.appendChild(entitiesList);
+                    regionCard.appendChild(periodSection);
+                });
+
+                container.appendChild(regionCard);
+            });
+            
+            // Blob URLを解放（クリーンアップ）
+            // ダウンロードが完了した後、またはページを離れる前に実行するのが理想ですが、ここではシンプルに
+            // URL.revokeObjectURL(url);
+        }
+
+        // 処理を開始
+        loadAndIntegrateJson();
+    </script>
+
+</body>
+</html>
