@@ -6,7 +6,7 @@
         "region_name": "ソビエト関連",
         "periods": [
           {
-            "upper_level": "近代",
+            "upper_level": "前期近代〜現代転換期（ロシア革命・内戦期）",
             "middle_level_entities": [
               "ロシア社会主義連邦ソビエト共和国",
               "ウクライナ・ソビエト社会主義共和国（初期）",
@@ -23,7 +23,7 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "現代転換期（ソビエト社会主義共和国連邦時代）",
             "middle_level_entities": [
               "ソビエト社会主義共和国連邦",
               "ロシア・ソビエト連邦社会主義共和国",
@@ -41,12 +41,7 @@
               "アルメニア・ソビエト社会主義共和国",
               "トルクメン・ソビエト社会主義共和国",
               "エストニア・ソビエト社会主義共和国",
-              "カレロ＝フィン・ソビエト社会主義共和国（1956年まで）"
-            ]
-          },
-          {
-            "upper_level": "近代",
-            "middle_level_entities": [
+              "カレロ＝フィン・ソビエト社会主義共和国（1956年まで）",
               "タタール自治ソビエト社会主義共和国",
               "バシキール自治ソビエト社会主義共和国",
               "チュヴァシ自治ソビエト社会主義共和国",
@@ -71,7 +66,7 @@
         "region_name": "東南アジア（マレー半島・島嶼部）",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（紀元前〜紀元14世紀）",
             "middle_level_entities": [
               "シュリーヴィジャヤ王国",
               "古マタラム王国",
@@ -87,7 +82,7 @@
             ]
           },
           {
-            "upper_level": "中世",
+            "upper_level": "中世後期〜近世前期（14世紀〜17世紀）",
             "middle_level_entities": [
               "マジャパヒト王国",
               "マラッカ・スルタン国",
@@ -106,7 +101,7 @@
             ]
           },
           {
-            "upper_level": "近世",
+            "upper_level": "近世後期〜植民地時代（17世紀〜19世紀末）",
             "middle_level_entities": [
               "オランダ領東インド",
               "英領マラヤ",
@@ -119,7 +114,7 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "現代転換期（20世紀前半・独立闘争期）",
             "middle_level_entities": [
               "アメリカ植民地フィリピン",
               "フィリピン第二共和国",
@@ -128,7 +123,7 @@
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀中盤〜）",
             "middle_level_entities": [
               "インドネシア共和国",
               "マレーシア",
@@ -145,14 +140,14 @@
         "region_name": "オセアニア（オーストラリア・ニュージーランド）",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（植民地接触以前）",
             "middle_level_entities": [
               "アボリジニ社会",
               "マオリ族（イウィ・ホープ）"
             ]
           },
           {
-            "upper_level": "近世",
+            "upper_level": "近世〜近代前期（18世紀末〜19世紀）",
             "middle_level_entities": [
               "ニューサウスウェールズ植民地",
               "ヴァン・ディーメンズ・ランド植民地",
@@ -165,14 +160,14 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "現代転換期（連邦・自治領成立期）",
             "middle_level_entities": [
               "オーストラリア連邦",
               "ニュージーランド・ドミニオン"
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀中盤〜）",
             "middle_level_entities": [
               "オーストラリア連邦",
               "ニュージーランド"
@@ -185,7 +180,7 @@
         "region_name": "インド亜大陸",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（紀元前〜紀元8世紀）",
             "middle_level_entities": [
               "インダス文明",
               "ヴェーダ・ジャナ",
@@ -209,7 +204,7 @@
             ]
           },
           {
-            "upper_level": "中世",
+            "upper_level": "中世前期〜中世後期（8世紀〜16世紀）",
             "middle_level_entities": [
               "ガズナ朝",
               "ゴール朝",
@@ -225,7 +220,7 @@
             ]
           },
           {
-            "upper_level": "近世",
+            "upper_level": "近世前期（ムガル帝国最盛期・16世紀〜18世紀）",
             "middle_level_entities": [
               "ムガル帝国",
               "スール朝",
@@ -240,15 +235,16 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "近代後期〜現代転換期（イギリス領インド帝国）",
             "middle_level_entities": [
               "イギリス領インド帝国",
               "藩王国",
-              "インド国民軍"
+              "インド国民軍",
+              "自由インド仮政府"
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀中盤〜）",
             "middle_level_entities": [
               "インド共和国",
               "パキスタン・イスラム共和国",
@@ -266,7 +262,7 @@
         "region_name": "太平洋諸島",
         "periods": [
           {
-            "upper_level": "近世",
+            "upper_level": "近世前期（伝統的王国・初期接触時代）",
             "middle_level_entities": [
               "ハワイ王国",
               "カメハメハ朝",
@@ -282,7 +278,7 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "近代後期〜植民地統治時代（19世紀〜20世紀中盤）",
             "middle_level_entities": [
               "スペイン領東インド（ミクロネシア諸島）",
               "ドイツ領ニューギニア（ミクロネシア地域）",
@@ -297,7 +293,7 @@
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家・自治領（20世紀中盤〜）",
             "middle_level_entities": [
               "パプアニューギニア独立国",
               "フィジー共和国",
