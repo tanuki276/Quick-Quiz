@@ -236,7 +236,8 @@
             }
 
             if (query) {
-                const wikidataSearchUrl = `https://www.wikidata.org/w/index.php?search=${encodeURIComponent(query)}&go=Go`;
+                // Wikipediaの検索URL
+                const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&go=Go`;
                 
                 // ローカル検索（フィルタリング）を実行
                 if (integratedDataCache) {
@@ -244,9 +245,9 @@
                     displayData(filteredData);
                 }
                 
-                // 検索ボタンをWikidata検索に割り当て
-                searchButton.textContent = `🌐 Wikidataで "${query}" を検索`;
-                searchButton.onclick = () => window.open(wikidataSearchUrl, '_blank');
+                // 検索ボタンをWikipedia検索に割り当て
+                searchButton.textContent = `📚 Wikipediaで "${query}" を検索`;
+                searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
             } else {
                  searchButton.textContent = '検索開始';
                  searchButton.onclick = performLocalSearch;
@@ -344,13 +345,13 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
                         
-                        // Wikidataの検索URLを生成
-                        const wikidataSearchUrl = `https://www.wikidata.org/w/index.php?search=${encodeURIComponent(entity)}&go=Go`;
+                        // Wikipediaの検索URLを生成
+                        const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(entity)}&go=Go`;
                         
                         const link = document.createElement('a');
-                        link.href = wikidataSearchUrl;
+                        link.href = wikipediaSearchUrl;
                         link.textContent = entity;
-                        link.target = '_blank'; 
+                        link.target = '_blank'; // 新しいタブで開く
                         
                         listItem.appendChild(link);
                         entitiesList.appendChild(listItem);
