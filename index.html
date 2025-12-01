@@ -47,6 +47,30 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
         }
+        
+        #download-container { /* ダウンロードコンテナのスタイルを追加 */
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            padding: 10px 20px;
+            text-align: right;
+        }
+
+        #download-button { /* ダウンロードボタンのスタイルを追加 */
+            padding: 10px 15px;
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 700;
+            transition: background-color 0.3s;
+        }
+
+        #download-button:hover {
+            background-color: #e0a800;
+        }
+
 
         #search-input {
             padding: 10px 15px;
@@ -88,6 +112,7 @@
         }
 
         /* --- データ表示スタイル --- */
+        /* ... (その他のスタイルは変更なし) ... */
 
         .loading-message,
         .error-message,
@@ -186,12 +211,13 @@
         <input type="text" id="search-input" placeholder="エンティティを検索...">
         <button id="search-button">検索開始</button>
     </div>
+    
+    <div id="download-container"></div>
 
     <div id="history-list-container">
         <div class="loading-message">データをロード中... しばらくお待ちください。</div>
     </div>
 
-    <div id="download-container"></div>
 
     <script>
         // =======================================
@@ -208,7 +234,6 @@
         const totalFiles = 9; 
         const fileBaseName = 'no';
         const fileExtension = '.json';
-        // JSONの読み込みパスをカレントディレクトリ直下の「./」に設定
         const basePath = './'; 
         // ============================
 
@@ -223,60 +248,64 @@
             }
         });
 
-        // --- フィルタリング機能 ---
+        // --- フィルタリング機能 (修正済み) ---
         function performLocalSearch() {
-            let query = searchInput.value.trim(); // 処理のために一旦、元の文字を維持
-            
+            // 1. ユーザー入力の値をtrim()して取得
+            const originalQuery = searchInput.value.trim(); 
+            let processedQuery = originalQuery; 
+
             // 検索キーワードがない場合は、全データを再表示
-            if (!query && integratedDataCache) {
-                displayData(integratedDataCache);
+            if (!originalQuery) {
+                if (integratedDataCache) {
+                    displayData(integratedDataCache);
+                }
                 searchButton.textContent = '検索開始';
                 searchButton.onclick = performLocalSearch;
                 return;
             }
 
-            if (query) {
-                // 1. queryの()を省く
-                query = query.replace(/[()（）]/g, '');
+            // 2. 括弧の削除を最初に実行 (検索クエリ側)
+            processedQuery = processedQuery.replace(/[()（）]/g, '');
 
-                // 2. 一文字のqueryに対しては「王朝」を付け足す
-                // 括弧を省いた後の文字列の長さが1文字で、かつ「王朝」を含まない場合
-                if (query.length === 1 && !query.includes('王朝')) {
-                    query = query + '王朝';
-                }
-                
-                // フィルタリングのために、処理後のクエリを小文字化
-                const lowerCaseQuery = query.toLowerCase();
+            // 3. 括弧削除後の文字列を再度トリムし、厳密に1文字かチェック
+            const trimmedProcessedQuery = processedQuery.trim();
 
-                // Wikipediaの検索URL（処理後のqueryを使用）
-                const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&go=Go`;
-
-                // ローカル検索（フィルタリング）を実行
-                if (integratedDataCache) {
-                    // フィルタリングには小文字化したqueryを使用
-                    const filteredData = filterData(integratedDataCache, lowerCaseQuery); 
-                    displayData(filteredData);
-                }
-
-                // 検索ボタンをWikipedia検索に割り当て
-                searchButton.textContent = `📚 Wikipediaで "${query}" を検索`; // 処理後のqueryを表示
-                searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
+            // 4. 一文字のqueryに対しては「王朝」を付け足す
+            if (trimmedProcessedQuery.length === 1 && !trimmedProcessedQuery.includes('王朝')) {
+                processedQuery = trimmedProcessedQuery + '王朝'; 
             } else {
-                 searchButton.textContent = '検索開始';
-                 searchButton.onclick = performLocalSearch;
+                processedQuery = trimmedProcessedQuery; 
             }
+            
+            // 5. フィルタリングとWikipedia検索の実行
+            const lowerCaseQuery = processedQuery.toLowerCase();
+            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(processedQuery)}&go=Go`;
+
+            if (integratedDataCache) {
+                const filteredData = filterData(integratedDataCache, lowerCaseQuery); 
+                displayData(filteredData);
+            }
+
+            searchButton.textContent = `📚 Wikipediaで "${processedQuery}" を検索`; 
+            searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 ---
+        // --- データをフィルタリングする関数 (修正済み) ---
         function filterData(data, query) {
             if (!query) return data;
 
             const filteredRegions = data.history_structured_list.regions.map(region => {
                 const filteredPeriods = region.periods.map(period => {
-                    // フィルタリングは小文字化したクエリ（query）を使用して実行
-                    const filteredEntities = period.middle_level_entities.filter(entity => 
-                        entity.toLowerCase().includes(query)
-                    );
+                    
+                    const filteredEntities = period.middle_level_entities.filter(entity => {
+                        
+                        // データ側のエンティティから括弧とその中身を削除する (重要修正)
+                        let searchableEntity = entity.replace(/\s*[\(\（][^\)\）]*[\)\）]\s*/g, '');
+                        searchableEntity = searchableEntity.trim();
+                        
+                        // 処理後のエンティティと、処理後のクエリを小文字化して比較する
+                        return searchableEntity.toLowerCase().includes(query);
+                    });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
                 }).filter(p => p !== null);
@@ -287,6 +316,35 @@
             return { history_structured_list: { regions: filteredRegions } };
         }
 
+        // --- ダウンロード機能 (新規追加) ---
+        function createDownloadButton(data) {
+            downloadContainer.innerHTML = ''; // コンテナをクリア
+            
+            const button = document.createElement('button');
+            button.id = 'download-button';
+            button.textContent = '💾 統合JSONデータをダウンロード';
+            
+            // JSONを文字列化
+            const jsonString = JSON.stringify(data, null, 2);
+            
+            // Blobを作成
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // ダウンロードリンクを作成
+            const url = URL.createObjectURL(blob);
+            
+            button.onclick = () => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'integrated_history_data.json'; // ダウンロードファイル名
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url); // オブジェクトURLを解放
+            };
+
+            downloadContainer.appendChild(button);
+        }
 
         // --- JSON読み込みと統合 ---
         async function loadAndIntegrateJson() {
@@ -295,7 +353,7 @@
             try {
                 for (let i = 1; i <= totalFiles; i++) {
                     const fileName = `${fileBaseName}${i}${fileExtension}`;
-                    const url = basePath + fileName; // 例: './no1.json'
+                    const url = basePath + fileName; 
 
                     const response = await fetch(url);
                     if (!response.ok) {
@@ -320,22 +378,27 @@
 
                 const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
                 integratedDataCache = finalIntegratedData;
+                
+                // データ表示
                 displayData(finalIntegratedData); 
+                
+                // ダウンロードボタン生成 (★追加)
+                createDownloadButton(finalIntegratedData); 
 
             } catch (error) {
-                // ロード失敗時、ユーザーにわかりやすいエラーメッセージを表示
-                container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがHTMLファイルと同じディレクトリ直下にあるか確認してください。</div>`;
+                container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがHTMLファイルと同じディレクトリ直下にあるか確認し、**ローカルサーバー**経由でアクセスしてください。</div>`;
                 downloadContainer.innerHTML = ''; 
                 console.error("統合処理の致命的エラー:", error);
             }
         }
 
-        // --- データの表示 ---
+        // --- データの表示 (変更なし) ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
 
             regions.forEach(region => {
+                // ... (表示ロジックは省略) ...
                 const regionCard = document.createElement('div');
                 regionCard.className = 'region-card';
 
@@ -359,13 +422,12 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        // Wikipediaの検索URLを生成
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(entity)}&go=Go`;
 
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
                         link.textContent = entity;
-                        link.target = '_blank'; // 新しいタブで開く
+                        link.target = '_blank'; 
 
                         listItem.appendChild(link);
                         entitiesList.appendChild(listItem);
@@ -378,7 +440,6 @@
                 container.appendChild(regionCard);
             });
 
-            // データがない場合のメッセージ
             if (regions.length === 0) {
                  container.innerHTML = '<p class="no-results-message">検索条件に一致するエンティティは見つかりませんでした。</p>';
             }
