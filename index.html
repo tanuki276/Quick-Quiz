@@ -47,7 +47,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
         }
-        
+
         #download-container { 
             max-width: 1200px;
             margin: 0 auto 20px auto;
@@ -210,7 +210,7 @@
         <input type="text" id="search-input" placeholder="エンティティを検索...">
         <button id="search-button">検索開始</button>
     </div>
-    
+
     <div id="download-container"></div>
 
     <div id="history-list-container">
@@ -251,7 +251,6 @@
         function performLocalSearch() {
             // 1. ユーザー入力の値をtrim()して取得
             const originalQuery = searchInput.value.trim(); 
-            let processedQuery = originalQuery; 
 
             // 検索キーワードがない場合は、全データを再表示
             if (!originalQuery) {
@@ -263,29 +262,18 @@
                 return;
             }
 
-            // 2. 括弧の削除を最初に実行 (検索クエリ側)
-            processedQuery = processedQuery.replace(/[()（）]/g, '');
-
-            // 3. 括弧削除後の文字列を再度トリムし、厳密に1文字かチェック
-            const trimmedProcessedQuery = processedQuery.trim();
-
-            // 4. 一文字のqueryに対しては「王朝」を付け足す
-            if (trimmedProcessedQuery.length === 1 && !trimmedProcessedQuery.includes('王朝')) {
-                processedQuery = trimmedProcessedQuery + '王朝'; 
-            } else {
-                processedQuery = trimmedProcessedQuery; 
-            }
-            
-            // 5. フィルタリングとWikipedia検索の実行
-            const lowerCaseQuery = processedQuery.toLowerCase();
-            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(processedQuery)}&go=Go`;
+            // 2. フィルタリングとWikipedia検索の実行
+            // フィルタリングは元のクエリを使用
+            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(originalQuery)}&go=Go`;
 
             if (integratedDataCache) {
-                const filteredData = filterData(integratedDataCache, lowerCaseQuery); 
+                // フィルタリング処理に元のクエリを渡す
+                const filteredData = filterData(integratedDataCache, originalQuery); 
                 displayData(filteredData);
             }
 
-            searchButton.textContent = `📚 Wikipediaで "${processedQuery}" を検索`; 
+            // 検索ボタンは元のクエリでWikipediaを検索するように設定
+            searchButton.textContent = `📚 Wikipediaで "${originalQuery}" を検索`; 
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
@@ -293,18 +281,24 @@
         function filterData(data, query) {
             if (!query) return data;
 
+            // クエリを小文字化
+            const lowerCaseQuery = query.toLowerCase();
+
             const filteredRegions = data.history_structured_list.regions.map(region => {
                 const filteredPeriods = region.periods.map(period => {
-                    
+
                     const filteredEntities = period.middle_level_entities.filter(entity => {
-                        
-                        // データ側のエンティティから括弧とその中身を削除する (最終修正)
-                        // 例: "衛 (王朝)" -> "衛 "、"明（皇帝）" -> "明"
-                        let searchableEntity = entity.replace(/\s*[\(\（][^\)\）]*[\)\）]\s*/g, '');
-                        searchableEntity = searchableEntity.trim();
-                        
-                        // 処理後のエンティティと、処理後のクエリを小文字化して比較する
-                        return searchableEntity.toLowerCase().includes(query);
+
+                        // 1. エンティティ名を複合検索可能な形式に整形: "宋（南朝）" -> "宋 南朝"
+                        // 括弧の開始と終了の間に何か文字がある場合のみ処理する
+                        let searchableEntity = entity.replace(/[（\(](.+?)[）\)]$/, ' $1');
+                        searchableEntity = searchableEntity.trim().toLowerCase(); 
+
+                        // 2. クエリと整形されたエンティティを照合 (部分一致)
+                        // 例: クエリ"南朝"は、"宋 南朝"に含まれるため一致
+                        // 例: クエリ"宋"は、"宋 南朝"に含まれるため一致
+                        // 例: クエリ"宋 南朝"は、"宋 南朝"に含まれるため一致
+                        return searchableEntity.includes(lowerCaseQuery);
                     });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
@@ -316,18 +310,18 @@
             return { history_structured_list: { regions: filteredRegions } };
         }
 
-        // --- ダウンロード機能 (追加済み) ---
+        // --- ダウンロード機能 (変更なし) ---
         function createDownloadButton(data) {
             downloadContainer.innerHTML = ''; 
-            
+
             const button = document.createElement('button');
             button.id = 'download-button';
             button.textContent = '💾 統合JSONデータをダウンロード';
-            
+
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
+
             button.onclick = () => {
                 const a = document.createElement('a');
                 a.href = url;
@@ -341,7 +335,7 @@
             downloadContainer.appendChild(button);
         }
 
-        // --- JSON読み込みと統合 (ダウンロード機能呼び出しを追加) ---
+        // --- JSON読み込みと統合 (変更なし) ---
         async function loadAndIntegrateJson() {
             let integratedRegions = [];
 
@@ -373,7 +367,7 @@
 
                 const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
                 integratedDataCache = finalIntegratedData;
-                
+
                 displayData(finalIntegratedData); 
                 createDownloadButton(finalIntegratedData); 
 
@@ -413,12 +407,19 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        // --- 💡 修正：リンク生成時にも検索ロジックを適用する ---
-                        let linkQuery = entity.replace(/[()（）]/g, '').trim();
+                        // --- 💡 修正：リンク生成時にも複合検索ロジックを適用する ---
+                        let linkQuery;
+                        
+                        // 1. 括弧内の情報があれば、スペース区切りの複合クエリを生成: "宋（南朝）" -> "宋 南朝"
+                        const match = entity.match(/[（\(](.+?)[）\)]/);
 
-                        // 1文字判定と「王朝」付与
-                        if (linkQuery.length === 1 && !linkQuery.includes('王朝')) {
-                            linkQuery = linkQuery + '王朝'; 
+                        if (match) {
+                            // 括弧内の情報を含めて複合クエリを生成
+                            // 例: "宋（南朝）" -> "宋 南朝"
+                            linkQuery = entity.replace(/[（\(](.+?)[）\)]$/, ' $1').trim();
+                        } else {
+                            // 括弧がない場合は、元のエンティティをそのまま使用
+                            linkQuery = entity.trim();
                         }
                         // --- 修正ここまで ---
 
