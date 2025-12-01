@@ -262,10 +262,12 @@
 
             // --- ▼ Wikipedia検索クエリの抽出ロジック ▼ ---
             // 1. 括弧内の文字列を抽出
+            // 全角・半角の括弧に対応
             const match = originalQuery.match(/[（\(](.+?)[）\)]/);
             const insideParentheses = match ? match[1].trim() : '';
 
             // 2. 括弧の外側の文字列を抽出
+            // 全角・半角の括弧に対応
             const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/, '').trim();
 
             // 3. Wikipedia検索に使用するキーワードを決定
@@ -442,8 +444,13 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        // 💡 リンク用のクエリは、括弧（とその中身）を取り除いた正式名称を使用
-                        const linkQuery = entity.replace(/[（\(].+?[）\)]/, '').trim(); 
+                        // 💡 修正後のリンク用クエリ: 全角・半角の括弧と中身を確実に削除
+                        // [\(（]...[\)）]：半角または全角の括弧（開き・閉じ）を確実にマッチさせる
+                        // [^）\)]*：括弧の中身を非貪欲にマッチさせる
+                        // g：複数の括弧の組があっても全て削除する
+                        const linkQuery = entity
+                            .replace(/[\(（][^）\)]*[\)）]/g, '')
+                            .trim(); 
                         
                         // Wikipedia検索URLを生成
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
