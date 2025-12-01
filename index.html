@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>liefantidia 3</title>
+    <title>liefantidia 3 - 統合歴史データ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -247,7 +247,7 @@
             }
         });
 
-        // --- フィルタリング機能 ---
+        // --- フィルタリング機能 (強化版) ---
         function performLocalSearch() {
             const originalQuery = searchInput.value.trim(); 
 
@@ -260,18 +260,42 @@
                 return;
             }
 
-            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(originalQuery)}&go=Go`;
+            // --- ▼ Wikipedia検索クエリの抽出ロジック ▼ ---
+            // 1. 括弧内の文字列を抽出
+            const match = originalQuery.match(/[（\(](.+?)[）\)]/);
+            const insideParentheses = match ? match[1].trim() : '';
+
+            // 2. 括弧の外側の文字列を抽出
+            const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/, '').trim();
+
+            // 3. Wikipedia検索に使用するキーワードを決定
+            let searchKeywords = [];
+            if (outsideParentheses) {
+                searchKeywords.push(outsideParentheses);
+            }
+            if (insideParentheses) {
+                searchKeywords.push(insideParentheses);
+            }
+            
+            // キーワードが一つもない場合は、オリジナルのクエリ全体を使用する
+            const finalSearchQuery = searchKeywords.length > 0 ? searchKeywords.join(' ') : originalQuery;
+            
+            // 検索URLを生成
+            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(finalSearchQuery)}&go=Go`;
+
+            // --- ▲ Wikipedia検索クエリの抽出ロジック ▲ ---
+
 
             if (integratedDataCache) {
                 const filteredData = filterData(integratedDataCache, originalQuery); 
                 displayData(filteredData);
             }
 
-            searchButton.textContent = `📚 Wikipediaで "${originalQuery}" を検索`; 
+            searchButton.textContent = `📚 Wikipediaで "${finalSearchQuery}" を検索`; 
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 ---
+        // --- データをフィルタリングする関数 (強化版) ---
         function filterData(data, query) {
             if (!query) return data;
 
@@ -281,11 +305,22 @@
                 const filteredPeriods = region.periods.map(period => {
 
                     const filteredEntities = period.middle_level_entities.filter(entity => {
+                        
+                        // 1. オリジナルの実体名 (括弧あり) をすべて小文字にする
+                        const originalEntity = entity.toLowerCase();
+                        
+                        // 2. 括弧内の文字列を抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "東チャガタイ"）
+                        const match = entity.match(/[（\(](.+?)[）\)]/);
+                        const insideParentheses = match ? match[1].toLowerCase() : '';
+                        
+                        // 3. 括弧の外側の文字列のみを抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "モグーリスタン・ハン国"）
+                        const outsideParentheses = entity.replace(/[（\(].+?[）\)]/, '').trim().toLowerCase();
 
-                        let searchableEntity = entity.replace(/[（\(](.+?)[）\)]$/, ' $1');
-                        searchableEntity = searchableEntity.trim().toLowerCase(); 
-
-                        return searchableEntity.includes(lowerCaseQuery);
+                        // 検索クエリと比較する。いずれかに一致すれば true を返す。
+                        // これにより、「括弧の外側」「括弧の内側」「両方」の全てが検索対象となる
+                        return originalEntity.includes(lowerCaseQuery) ||
+                               insideParentheses.includes(lowerCaseQuery) ||
+                               outsideParentheses.includes(lowerCaseQuery);
                     });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
@@ -342,18 +377,18 @@
                     let jsonContent;
                     try {
                         const trimmedText = text.trim();
-                        
+
                         if (trimmedText === '') {
                             // ❌ 空ファイルのエラーを明確化
                             throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」の内容が空文字列、または空白文字のみでした。`);
                         }
-                        
+
                         jsonContent = JSON.parse(trimmedText);
                     } catch (e) {
                         // ❌ JSONパースエラー時に詳細デバッグ情報をコンソールに出力
                         const snippet = text.substring(0, 200) + (text.length > 200 ? '...' : '');
                         console.error(`デバッグ情報 - ファイル: ${fileName}`, `エラー: ${e.message}`, `内容の先頭スニペット: ${snippet}`);
-                        
+
                         // ユーザーへの表示をより詳細にする
                         throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」でパース失敗。詳細: ${e.message}。コンソールで内容の先頭200文字を確認してください。`);
                     }
@@ -407,15 +442,10 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        let linkQuery;
-                        const match = entity.match(/[（\(](.+?)[）\)]/);
-
-                        if (match) {
-                            linkQuery = entity.replace(/[（\(](.+?)[）\)]$/, ' $1').trim();
-                        } else {
-                            linkQuery = entity.trim();
-                        }
-
+                        // 💡 リンク用のクエリは、括弧（とその中身）を取り除いた正式名称を使用
+                        const linkQuery = entity.replace(/[（\(].+?[）\)]/, '').trim(); 
+                        
+                        // Wikipedia検索URLを生成
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
 
                         const link = document.createElement('a');
