@@ -6,7 +6,7 @@
         "region_name": "北ヨーロッパ・西ヨーロッパ",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（紀元前〜紀元5世紀）",
             "middle_level_entities": [
               "ブリタンニア",
               "ガリア",
@@ -17,7 +17,7 @@
             ]
           },
           {
-            "upper_level": "前期中世",
+            "upper_level": "古典後期〜後期古代（5世紀〜9世紀）",
             "middle_level_entities": [
               "メロヴィング朝",
               "ウェセックス王国",
@@ -37,7 +37,7 @@
             ]
           },
           {
-            "upper_level": "中世",
+            "upper_level": "中世前期〜中期（9世紀〜14世紀）",
             "middle_level_entities": [
               "イングランド王国",
               "スコットランド王国",
@@ -54,7 +54,7 @@
             ]
           },
           {
-            "upper_level": "近世",
+            "upper_level": "近世（15世紀〜18世紀）",
             "middle_level_entities": [
               "フランス王国",
               "グレートブリテン王国",
@@ -66,7 +66,7 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "前期近代〜帝国主義時代（19世紀〜20世紀初頭）",
             "middle_level_entities": [
               "フランス第一共和政",
               "フランス第一帝政",
@@ -85,7 +85,7 @@
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀中盤〜）",
             "middle_level_entities": [
               "フランス第五共和政",
               "イギリス",
