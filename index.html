@@ -105,7 +105,7 @@
             border-radius: 8px;
             margin-top: 20px;
         }
-        
+
         .no-results-message {
             color: #d32f2f;
             font-weight: bold;
@@ -190,7 +190,7 @@
     <div id="history-list-container">
         <div class="loading-message">データをロード中... しばらくお待ちください。</div>
     </div>
-    
+
     <div id="download-container"></div>
 
     <script>
@@ -201,7 +201,7 @@
         const downloadContainer = document.getElementById('download-container');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
-        
+
         let integratedDataCache = null;
 
         // === 💡 9ファイル設定 ===
@@ -222,10 +222,10 @@
                 performLocalSearch();
             }
         });
-        
+
         // --- フィルタリング機能 ---
         function performLocalSearch() {
-            const query = searchInput.value.trim().toLowerCase();
+            let query = searchInput.value.trim(); // 処理のために一旦、元の文字を維持
             
             // 検索キーワードがない場合は、全データを再表示
             if (!query && integratedDataCache) {
@@ -236,34 +236,48 @@
             }
 
             if (query) {
-                // Wikipediaの検索URL
-                const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&go=Go`;
-                
-                // ローカル検索（フィルタリング）を実行
-                if (integratedDataCache) {
-                    const filteredData = filterData(integratedDataCache, query);
-                    displayData(filteredData);
+                // 1. queryの()を省く
+                query = query.replace(/[()（）]/g, '');
+
+                // 2. 一文字のqueryに対しては「王朝」を付け足す
+                // 括弧を省いた後の文字列の長さが1文字で、かつ「王朝」を含まない場合
+                if (query.length === 1 && !query.includes('王朝')) {
+                    query = query + '王朝';
                 }
                 
+                // フィルタリングのために、処理後のクエリを小文字化
+                const lowerCaseQuery = query.toLowerCase();
+
+                // Wikipediaの検索URL（処理後のqueryを使用）
+                const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(query)}&go=Go`;
+
+                // ローカル検索（フィルタリング）を実行
+                if (integratedDataCache) {
+                    // フィルタリングには小文字化したqueryを使用
+                    const filteredData = filterData(integratedDataCache, lowerCaseQuery); 
+                    displayData(filteredData);
+                }
+
                 // 検索ボタンをWikipedia検索に割り当て
-                searchButton.textContent = `📚 Wikipediaで "${query}" を検索`;
+                searchButton.textContent = `📚 Wikipediaで "${query}" を検索`; // 処理後のqueryを表示
                 searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
             } else {
                  searchButton.textContent = '検索開始';
                  searchButton.onclick = performLocalSearch;
             }
         }
-        
+
         // --- データをフィルタリングする関数 ---
         function filterData(data, query) {
             if (!query) return data;
 
             const filteredRegions = data.history_structured_list.regions.map(region => {
                 const filteredPeriods = region.periods.map(period => {
+                    // フィルタリングは小文字化したクエリ（query）を使用して実行
                     const filteredEntities = period.middle_level_entities.filter(entity => 
                         entity.toLowerCase().includes(query)
                     );
-                    
+
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
                 }).filter(p => p !== null);
 
@@ -344,15 +358,15 @@
 
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
-                        
+
                         // Wikipediaの検索URLを生成
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(entity)}&go=Go`;
-                        
+
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
                         link.textContent = entity;
                         link.target = '_blank'; // 新しいタブで開く
-                        
+
                         listItem.appendChild(link);
                         entitiesList.appendChild(listItem);
                     });
@@ -363,7 +377,7 @@
 
                 container.appendChild(regionCard);
             });
-            
+
             // データがない場合のメッセージ
             if (regions.length === 0) {
                  container.innerHTML = '<p class="no-results-message">検索条件に一致するエンティティは見つかりませんでした。</p>';
