@@ -6,7 +6,7 @@
         "region_name": "北アメリカ大陸",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（紀元前〜紀元15世紀）",
             "middle_level_entities": [
               "オルメカ文明",
               "マヤ文明",
@@ -21,7 +21,7 @@
             ]
           },
           {
-            "upper_level": "中世",
+            "upper_level": "近世前期（16世紀〜18世紀中盤）",
             "middle_level_entities": [
               "ヌエバ・エスパーニャ副王領",
               "ヌーヴェル・フランス",
@@ -44,7 +44,7 @@
             ]
           },
           {
-            "upper_level": "近世",
+            "upper_level": "近代前期〜独立時代（18世紀中盤〜19世紀）",
             "middle_level_entities": [
               "アメリカ合衆国",
               "テキサス共和国",
@@ -59,7 +59,7 @@
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀〜）",
             "middle_level_entities": [
               "カナダ",
               "アメリカ合衆国",
@@ -73,7 +73,7 @@
         "region_name": "中央アメリカ・カリブ海地域・南アメリカ大陸",
         "periods": [
           {
-            "upper_level": "古代",
+            "upper_level": "先古代・古代（紀元前〜紀元15世紀）",
             "middle_level_entities": [
               "インカ帝国",
               "ムイスカ連盟",
@@ -86,7 +86,7 @@
             ]
           },
           {
-            "upper_level": "前期中世",
+            "upper_level": "近世前期（16世紀〜18世紀）",
             "middle_level_entities": [
               "ヌエバ・エスパーニャ副王領",
               "ヌエバ・グラナダ副王領",
@@ -100,7 +100,7 @@
             ]
           },
           {
-            "upper_level": "後期中世",
+            "upper_level": "近代前期〜独立時代（18世紀末〜19世紀中盤）",
             "middle_level_entities": [
               "ハイチ帝国",
               "ハイチ帝国(北)",
@@ -117,7 +117,7 @@
             ]
           },
           {
-            "upper_level": "近代",
+            "upper_level": "帝国主義・現代転換期（19世紀中盤〜20世紀中盤）",
             "middle_level_entities": [
               "ベネズエラ共和国",
               "エクアドル共和国",
@@ -132,7 +132,7 @@
             ]
           },
           {
-            "upper_level": "現代",
+            "upper_level": "現代国家（20世紀中盤〜）",
             "middle_level_entities": [
               "アルゼンチン共和国",
               "ボリビア多民族国",
