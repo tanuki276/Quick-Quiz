@@ -8,25 +8,20 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
         h1 { color: #004d40; border-bottom: 3px solid #b2dfdb; padding-bottom: 10px; margin-bottom: 30px; text-align: center; }
         /* ダウンロードボタンのスタイル */
-        #download-container {
-            text-align: right;
-            margin-bottom: 20px;
-        }
-        #download-btn {
-            background-color: #ff9800; /* オレンジ */
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            text-decoration: none; /* <a>要素として使用する場合 */
-            display: inline-block;
-        }
-        #download-btn:hover {
-            background-color: #e68900;
-        }
+        #download-container { text-align: right; margin-bottom: 20px; }
+        #download-btn { background-color: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; text-decoration: none; display: inline-block; }
+        #download-btn:hover { background-color: #e68900; }
         
+        /* エラー表示スタイル */
+        .error-message {
+            color: white;
+            background-color: #d32f2f; /* 赤色 */
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
         /* リスト表示のスタイルは変更なし */
         .region-card { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin-bottom: 25px; padding: 20px; }
         .region-header { background-color: #4db6ac; color: white; padding: 10px 15px; border-radius: 6px 6px 0 0; margin: -20px -20px 20px -20px; font-size: 1.5em; font-weight: bold; }
@@ -39,8 +34,7 @@
 <body>
 
     <h1>世界歴史構造化リスト</h1>
-    <div id="download-container">
-        </div>
+    <div id="download-container"></div>
     <div id="history-list-container">
         <p>データを読み込み中...</p>
     </div>
@@ -51,51 +45,59 @@
         const totalFiles = 9;
         const fileBaseName = 'no';
         const fileExtension = '.json';
-        const basePath = './';
+        const basePath = './data/';
 
-        // 複数のJSONファイルを非同期で読み込み、統合する関数
+        /**
+         * 複数のJSONファイルを順番に読み込み、統合する関数
+         */
         async function loadAndIntegrateJson() {
-            const fetchPromises = [];
-            
-            for (let i = 1; i <= totalFiles; i++) {
-                const fileName = `${fileBaseName}${i}${fileExtension}`;
-                const url = basePath + fileName;
-                
-                fetchPromises.push(
-                    fetch(url)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`ファイル ${fileName} の読み込みに失敗しました (${response.status})`);
-                            }
-                            return response.json();
-                        })
-                );
-            }
+            let integratedRegions = [];
 
             try {
-                const allJsonData = await Promise.all(fetchPromises);
-                let integratedRegions = [];
+                for (let i = 1; i <= totalFiles; i++) {
+                    const fileName = `${fileBaseName}${i}${fileExtension}`;
+                    const url = basePath + fileName;
 
-                allJsonData.forEach(data => {
-                    if (data && data.history_structured_list && data.history_structured_list.regions) {
-                        integratedRegions.push(...data.history_structured_list.regions);
+                    // 1. ファイルの読み込み
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`ファイルが見つからないか、読み込み中にネットワークエラーが発生しました (Status: ${response.status})`);
                     }
-                });
 
+                    const text = await response.text();
+                    
+                    // 2. JSON解析 (エラーハンドリングの核となる部分)
+                    let jsonContent;
+                    try {
+                        jsonContent = JSON.parse(text);
+                    } catch (e) {
+                        // JSON.parseが失敗した場合、ファイル名とエラーメッセージを出力
+                        throw new Error(`ファイル「${fileName}」でJSON構文エラーが発生しました。詳細: ${e.message}`);
+                    }
+                    
+                    // 3. データの統合
+                    if (jsonContent && jsonContent.history_structured_list && jsonContent.history_structured_list.regions) {
+                        integratedRegions.push(...jsonContent.history_structured_list.regions);
+                    } else {
+                         throw new Error(`ファイル「${fileName}」のデータ構造が期待された形式ではありませんでした。`);
+                    }
+                }
+
+                // すべてのファイルが正常に統合された後の最終データ
                 const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
-
-                // 統合されたデータを表示し、ダウンロードボタンを生成する
-                displayData(finalIntegratedData);
+                displayData(finalIntegratedData); // 成功時の表示とダウンロードボタン生成
 
             } catch (error) {
-                container.innerHTML = `<p style="color: red;">エラーが発生しました: ${error.message}</p>`;
-                console.error(error);
+                // 読み込み、解析、または構造エラーが発生した場合
+                container.innerHTML = `<div class="error-message">🚨 統合処理に失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}</div>`;
+                downloadContainer.innerHTML = ''; // ダウンロードボタンは表示しない
+                console.error("統合処理の致命的エラー:", error);
             }
         }
 
-        // データをHTMLに出力し、ダウンロードボタンを生成する関数
+        // データをHTMLに出力し、ダウンロードボタンを生成する関数 (変更なし)
         function displayData(integratedData) {
-            container.innerHTML = ''; // "読み込み中"メッセージをクリア
+            container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
 
             // --- 1. ダウンロードボタンの生成 ---
@@ -106,13 +108,13 @@
             const downloadLink = document.createElement('a');
             downloadLink.id = 'download-btn';
             downloadLink.href = url;
-            downloadLink.download = 'integrated_world_history.json'; // ダウンロード時のファイル名
+            downloadLink.download = 'integrated_world_history.json'; 
             downloadLink.textContent = '📥 統合JSONをダウンロード';
             
             downloadContainer.innerHTML = '';
             downloadContainer.appendChild(downloadLink);
 
-            // --- 2. リスト表示（前のロジックと同じ） ---
+            // --- 2. リスト表示 ---
             regions.forEach(region => {
                 const regionCard = document.createElement('div');
                 regionCard.className = 'region-card';
@@ -146,10 +148,6 @@
 
                 container.appendChild(regionCard);
             });
-            
-            // Blob URLを解放（クリーンアップ）
-            // ダウンロードが完了した後、またはページを離れる前に実行するのが理想ですが、ここではシンプルに
-            // URL.revokeObjectURL(url);
         }
 
         // 処理を開始
