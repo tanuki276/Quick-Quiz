@@ -247,12 +247,10 @@
             }
         });
 
-        // --- フィルタリング機能 (修正済み) ---
+        // --- フィルタリング機能 ---
         function performLocalSearch() {
-            // 1. ユーザー入力の値をtrim()して取得
             const originalQuery = searchInput.value.trim(); 
 
-            // 検索キーワードがない場合は、全データを再表示
             if (!originalQuery) {
                 if (integratedDataCache) {
                     displayData(integratedDataCache);
@@ -262,26 +260,21 @@
                 return;
             }
 
-            // 2. フィルタリングとWikipedia検索の実行
-            // フィルタリングは元のクエリを使用
             const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(originalQuery)}&go=Go`;
 
             if (integratedDataCache) {
-                // フィルタリング処理に元のクエリを渡す
                 const filteredData = filterData(integratedDataCache, originalQuery); 
                 displayData(filteredData);
             }
 
-            // 検索ボタンは元のクエリでWikipediaを検索するように設定
             searchButton.textContent = `📚 Wikipediaで "${originalQuery}" を検索`; 
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 (修正済み) ---
+        // --- データをフィルタリングする関数 ---
         function filterData(data, query) {
             if (!query) return data;
 
-            // クエリを小文字化
             const lowerCaseQuery = query.toLowerCase();
 
             const filteredRegions = data.history_structured_list.regions.map(region => {
@@ -289,15 +282,9 @@
 
                     const filteredEntities = period.middle_level_entities.filter(entity => {
 
-                        // 1. エンティティ名を複合検索可能な形式に整形: "宋（南朝）" -> "宋 南朝"
-                        // 括弧の開始と終了の間に何か文字がある場合のみ処理する
                         let searchableEntity = entity.replace(/[（\(](.+?)[）\)]$/, ' $1');
                         searchableEntity = searchableEntity.trim().toLowerCase(); 
 
-                        // 2. クエリと整形されたエンティティを照合 (部分一致)
-                        // 例: クエリ"南朝"は、"宋 南朝"に含まれるため一致
-                        // 例: クエリ"宋"は、"宋 南朝"に含まれるため一致
-                        // 例: クエリ"宋 南朝"は、"宋 南朝"に含まれるため一致
                         return searchableEntity.includes(lowerCaseQuery);
                     });
 
@@ -310,7 +297,7 @@
             return { history_structured_list: { regions: filteredRegions } };
         }
 
-        // --- ダウンロード機能 (変更なし) ---
+        // --- ダウンロード機能 ---
         function createDownloadButton(data) {
             downloadContainer.innerHTML = ''; 
 
@@ -335,7 +322,7 @@
             downloadContainer.appendChild(button);
         }
 
-        // --- JSON読み込みと統合 (変更なし) ---
+        // --- JSON読み込みと統合 (デバッグ機能強化版) ---
         async function loadAndIntegrateJson() {
             let integratedRegions = [];
 
@@ -346,16 +333,29 @@
 
                     const response = await fetch(url);
                     if (!response.ok) {
-                        throw new Error(`ファイルが見つからないか、読み込み中にネットワークエラーが発生しました (Status: ${response.status})。ファイル: ${url}`);
+                        // 🚨 ネットワーク/ファイル存在エラーを明確化
+                        throw new Error(`🚨 ネットワーク/ファイル存在エラー: ${url}が見つからないか、読み込み失敗 (Status: ${response.status})。`);
                     }
 
                     const text = await response.text();
 
                     let jsonContent;
                     try {
-                        jsonContent = JSON.parse(text);
+                        const trimmedText = text.trim();
+                        
+                        if (trimmedText === '') {
+                            // ❌ 空ファイルのエラーを明確化
+                            throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」の内容が空文字列、または空白文字のみでした。`);
+                        }
+                        
+                        jsonContent = JSON.parse(trimmedText);
                     } catch (e) {
-                        throw new Error(`ファイル「${fileName}」でJSON構文エラーが発生しました。詳細: ${e.message}`);
+                        // ❌ JSONパースエラー時に詳細デバッグ情報をコンソールに出力
+                        const snippet = text.substring(0, 200) + (text.length > 200 ? '...' : '');
+                        console.error(`デバッグ情報 - ファイル: ${fileName}`, `エラー: ${e.message}`, `内容の先頭スニペット: ${snippet}`);
+                        
+                        // ユーザーへの表示をより詳細にする
+                        throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」でパース失敗。詳細: ${e.message}。コンソールで内容の先頭200文字を確認してください。`);
                     }
 
                     if (jsonContent && jsonContent.history_structured_list && jsonContent.history_structured_list.regions) {
@@ -372,13 +372,13 @@
                 createDownloadButton(finalIntegratedData); 
 
             } catch (error) {
-                container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがHTMLファイルと同じディレクトリ直下にあるか確認し、**ローカルサーバー**経由でアクセスしてください。</div>`;
+                container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがすべて存在し、有効な形式であることを確認してください。</div>`;
                 downloadContainer.innerHTML = ''; 
                 console.error("統合処理の致命的エラー:", error);
             }
         }
 
-        // --- データの表示 (リストのリンク処理を修正) ---
+        // --- データの表示 ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
@@ -407,29 +407,20 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        // --- 💡 修正：リンク生成時にも複合検索ロジックを適用する ---
                         let linkQuery;
-                        
-                        // 1. 括弧内の情報があれば、スペース区切りの複合クエリを生成: "宋（南朝）" -> "宋 南朝"
                         const match = entity.match(/[（\(](.+?)[）\)]/);
 
                         if (match) {
-                            // 括弧内の情報を含めて複合クエリを生成
-                            // 例: "宋（南朝）" -> "宋 南朝"
                             linkQuery = entity.replace(/[（\(](.+?)[）\)]$/, ' $1').trim();
                         } else {
-                            // 括弧がない場合は、元のエンティティをそのまま使用
                             linkQuery = entity.trim();
                         }
-                        // --- 修正ここまで ---
 
-
-                        // Wikipediaの検索URLを生成 (加工済みの linkQuery を使用)
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
 
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
-                        link.textContent = entity; // 表示はJSONの元の文字列
+                        link.textContent = entity; 
                         link.target = '_blank'; 
 
                         listItem.appendChild(link);
