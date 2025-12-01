@@ -48,14 +48,14 @@
             margin-bottom: 20px;
         }
         
-        #download-container { /* ダウンロードコンテナのスタイルを追加 */
+        #download-container { 
             max-width: 1200px;
             margin: 0 auto 20px auto;
             padding: 10px 20px;
             text-align: right;
         }
 
-        #download-button { /* ダウンロードボタンのスタイルを追加 */
+        #download-button { 
             padding: 10px 15px;
             background-color: #ffc107;
             color: #333;
@@ -112,7 +112,6 @@
         }
 
         /* --- データ表示スタイル --- */
-        /* ... (その他のスタイルは変更なし) ... */
 
         .loading-message,
         .error-message,
@@ -299,7 +298,8 @@
                     
                     const filteredEntities = period.middle_level_entities.filter(entity => {
                         
-                        // データ側のエンティティから括弧とその中身を削除する (重要修正)
+                        // データ側のエンティティから括弧とその中身を削除する (最終修正)
+                        // 例: "衛 (王朝)" -> "衛 "、"明（皇帝）" -> "明"
                         let searchableEntity = entity.replace(/\s*[\(\（][^\)\）]*[\)\）]\s*/g, '');
                         searchableEntity = searchableEntity.trim();
                         
@@ -316,37 +316,32 @@
             return { history_structured_list: { regions: filteredRegions } };
         }
 
-        // --- ダウンロード機能 (新規追加) ---
+        // --- ダウンロード機能 (追加済み) ---
         function createDownloadButton(data) {
-            downloadContainer.innerHTML = ''; // コンテナをクリア
+            downloadContainer.innerHTML = ''; 
             
             const button = document.createElement('button');
             button.id = 'download-button';
             button.textContent = '💾 統合JSONデータをダウンロード';
             
-            // JSONを文字列化
             const jsonString = JSON.stringify(data, null, 2);
-            
-            // Blobを作成
             const blob = new Blob([jsonString], { type: 'application/json' });
-            
-            // ダウンロードリンクを作成
             const url = URL.createObjectURL(blob);
             
             button.onclick = () => {
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'integrated_history_data.json'; // ダウンロードファイル名
+                a.download = 'integrated_history_data.json'; 
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url); // オブジェクトURLを解放
+                URL.revokeObjectURL(url); 
             };
 
             downloadContainer.appendChild(button);
         }
 
-        // --- JSON読み込みと統合 ---
+        // --- JSON読み込みと統合 (ダウンロード機能呼び出しを追加) ---
         async function loadAndIntegrateJson() {
             let integratedRegions = [];
 
@@ -379,10 +374,7 @@
                 const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
                 integratedDataCache = finalIntegratedData;
                 
-                // データ表示
                 displayData(finalIntegratedData); 
-                
-                // ダウンロードボタン生成 (★追加)
                 createDownloadButton(finalIntegratedData); 
 
             } catch (error) {
@@ -392,13 +384,12 @@
             }
         }
 
-        // --- データの表示 (変更なし) ---
+        // --- データの表示 (リストのリンク処理を修正) ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
 
             regions.forEach(region => {
-                // ... (表示ロジックは省略) ...
                 const regionCard = document.createElement('div');
                 regionCard.className = 'region-card';
 
@@ -422,11 +413,22 @@
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
 
-                        const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(entity)}&go=Go`;
+                        // --- 💡 修正：リンク生成時にも検索ロジックを適用する ---
+                        let linkQuery = entity.replace(/[()（）]/g, '').trim();
+
+                        // 1文字判定と「王朝」付与
+                        if (linkQuery.length === 1 && !linkQuery.includes('王朝')) {
+                            linkQuery = linkQuery + '王朝'; 
+                        }
+                        // --- 修正ここまで ---
+
+
+                        // Wikipediaの検索URLを生成 (加工済みの linkQuery を使用)
+                        const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
 
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
-                        link.textContent = entity;
+                        link.textContent = entity; // 表示はJSONの元の文字列
                         link.target = '_blank'; 
 
                         listItem.appendChild(link);
