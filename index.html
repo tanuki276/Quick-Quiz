@@ -182,6 +182,8 @@
             border-radius: 3px;
             font-size: 0.95em;
             transition: background-color 0.2s;
+            display: flex; /* Flexboxでタグと名前を横並びに */
+            align-items: center;
         }
 
         .middle-entities-list li:hover {
@@ -192,11 +194,24 @@
             text-decoration: none;
             color: #495057;
             font-weight: 400;
+            margin-right: 8px; /* タグとの間にスペースを設ける */
         }
 
         .middle-entities-list a:hover {
             color: #333;
             text-decoration: underline;
+        }
+        
+        /* --- タグのスタイル（新規追加） --- */
+        .entity-tag {
+            background-color: #007bff;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 700;
+            margin-left: 4px;
+            white-space: nowrap; /* 折り返しを防ぐ */
         }
     </style>
 </head>
@@ -207,7 +222,7 @@
     </header>
 
     <div id="controls-container">
-        <input type="text" id="search-input" placeholder="エンティティを検索...">
+        <input type="text" id="search-input" placeholder="エンティティ名やタグを検索...">
         <button id="search-button">検索開始</button>
     </div>
 
@@ -229,7 +244,7 @@
 
         let integratedDataCache = null;
 
-        // === 💡 9ファイル設定 ===
+        // === 💡 9ファイル設定（マジックナンバーは保持） ===
         const totalFiles = 9; 
         const fileBaseName = 'no';
         const fileExtension = '.json';
@@ -260,32 +275,29 @@
                 return;
             }
 
-            // --- ▼ Wikipedia検索クエリの抽出ロジック ▼ ---
-            // 1. 括弧内の文字列を抽出
-            // 全角・半角の括弧に対応
+            // --- ▼ Wikipedia検索クエリの抽出ロジック（修正済） ▼ ---
+            // 1. 括弧内の文字列を抽出（全角・半角対応）
             const match = originalQuery.match(/[（\(](.+?)[）\)]/);
             const insideParentheses = match ? match[1].trim() : '';
 
-            // 2. 括弧の外側の文字列を抽出
-            // 全角・半角の括弧に対応
-            const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/, '').trim();
+            // 2. 括弧の外側の文字列を抽出（全角・半角対応で括弧内を削除）
+            const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/g, '').trim();
 
             // 3. Wikipedia検索に使用するキーワードを決定
-            let searchKeywords = [];
+            // 括弧の外側を優先し、括弧内の情報は補助的に使用
+            let finalSearchQuery;
             if (outsideParentheses) {
-                searchKeywords.push(outsideParentheses);
+                finalSearchQuery = outsideParentheses;
+            } else if (insideParentheses) {
+                finalSearchQuery = insideParentheses;
+            } else {
+                finalSearchQuery = originalQuery;
             }
-            if (insideParentheses) {
-                searchKeywords.push(insideParentheses);
-            }
-            
-            // キーワードが一つもない場合は、オリジナルのクエリ全体を使用する
-            const finalSearchQuery = searchKeywords.length > 0 ? searchKeywords.join(' ') : originalQuery;
-            
+
             // 検索URLを生成
             const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(finalSearchQuery)}&go=Go`;
 
-            // --- ▲ Wikipedia検索クエリの抽出ロジック ▲ ---
+            // --- ▲ Wikipedia検索クエリの抽出ロジック（修正済） ▲ ---
 
 
             if (integratedDataCache) {
@@ -293,11 +305,12 @@
                 displayData(filteredData);
             }
 
+            // 検索ボタンをWikipediaリンクに変更
             searchButton.textContent = `📚 Wikipediaで "${finalSearchQuery}" を検索`; 
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 (強化版) ---
+        // --- データをフィルタリングする関数 (タグ検索を追加) ---
         function filterData(data, query) {
             if (!query) return data;
 
@@ -307,22 +320,27 @@
                 const filteredPeriods = region.periods.map(period => {
 
                     const filteredEntities = period.middle_level_entities.filter(entity => {
-                        
-                        // 1. オリジナルの実体名 (括弧あり) をすべて小文字にする
-                        const originalEntity = entity.toLowerCase();
-                        
+                        const entityName = entity.name || '';
+                        const entityTags = entity.tags || [];
+
+                        // 1. エンティティ名全体でのマッチング
+                        const originalEntityLower = entityName.toLowerCase();
+
                         // 2. 括弧内の文字列を抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "東チャガタイ"）
-                        const match = entity.match(/[（\(](.+?)[）\)]/);
+                        const match = entityName.match(/[（\(](.+?)[）\)]/);
                         const insideParentheses = match ? match[1].toLowerCase() : '';
-                        
+
                         // 3. 括弧の外側の文字列のみを抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "モグーリスタン・ハン国"）
-                        const outsideParentheses = entity.replace(/[（\(].+?[）\)]/, '').trim().toLowerCase();
+                        const outsideParentheses = entityName.replace(/[（\(].+?[）\)]/g, '').trim().toLowerCase();
+                        
+                        // 4. タグの中身のいずれかに一致するか
+                        const tagMatch = entityTags.some(tag => tag.toLowerCase().includes(lowerCaseQuery));
 
                         // 検索クエリと比較する。いずれかに一致すれば true を返す。
-                        // これにより、「括弧の外側」「括弧の内側」「両方」の全てが検索対象となる
-                        return originalEntity.includes(lowerCaseQuery) ||
+                        return originalEntityLower.includes(lowerCaseQuery) ||
                                insideParentheses.includes(lowerCaseQuery) ||
-                               outsideParentheses.includes(lowerCaseQuery);
+                               outsideParentheses.includes(lowerCaseQuery) ||
+                               tagMatch; // 💡 タグによる検索を追加
                     });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
@@ -415,7 +433,7 @@
             }
         }
 
-        // --- データの表示 ---
+        // --- データの表示 (タグ表示を追加) ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
@@ -443,24 +461,33 @@
 
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
+                        
+                        const entityName = entity.name || '';
+                        const entityTags = entity.tags || [];
 
-                        // 💡 修正後のリンク用クエリ: 全角・半角の括弧と中身を確実に削除
-                        // [\(（]...[\)）]：半角または全角の括弧（開き・閉じ）を確実にマッチさせる
-                        // [^）\)]*：括弧の中身を非貪欲にマッチさせる
-                        // g：複数の括弧の組があっても全て削除する
-                        const linkQuery = entity
+                        // 💡 リンク用クエリの生成: 括弧と中身を削除し、純粋なエンティティ名のみを抽出
+                        const linkQuery = entityName
                             .replace(/[\(（][^）\)]*[\)）]/g, '')
                             .trim(); 
-                        
+
                         // Wikipedia検索URLを生成
                         const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
 
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
-                        link.textContent = entity; 
+                        link.textContent = entityName; 
                         link.target = '_blank'; 
 
                         listItem.appendChild(link);
+                        
+                        // 💡 tagsの表示 (新規追加)
+                        entityTags.forEach(tag => {
+                            const tagSpan = document.createElement('span');
+                            tagSpan.className = 'entity-tag';
+                            tagSpan.textContent = tag;
+                            listItem.appendChild(tagSpan);
+                        });
+
                         entitiesList.appendChild(listItem);
                     });
 
