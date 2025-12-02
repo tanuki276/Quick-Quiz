@@ -47,6 +47,21 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
         }
+        
+        #search-options-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        
+        #search-mode-container {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+        }
 
         #download-container { 
             max-width: 1200px;
@@ -182,7 +197,7 @@
             border-radius: 3px;
             font-size: 0.95em;
             transition: background-color 0.2s;
-            display: flex; /* Flexboxでタグと名前を横並びに */
+            display: flex; 
             align-items: center;
         }
 
@@ -194,7 +209,7 @@
             text-decoration: none;
             color: #495057;
             font-weight: 400;
-            margin-right: 8px; /* タグとの間にスペースを設ける */
+            margin-right: 8px; 
         }
 
         .middle-entities-list a:hover {
@@ -202,7 +217,6 @@
             text-decoration: underline;
         }
 
-        /* --- タグのスタイル（新規追加） --- */
         .entity-tag {
             background-color: #007bff;
             color: white;
@@ -211,25 +225,20 @@
             font-size: 0.75em;
             font-weight: 700;
             margin-left: 4px;
-            white-space: nowrap; /* 折り返しを防ぐ */
-            cursor: pointer; /* クリック可能であることを示す */
+            white-space: nowrap; 
+            cursor: pointer; 
         }
 
         .entity-tag:hover {
             background-color: #0056b3;
         }
 
-        /* --- タグ表示のON/OFF切り替え用コンテナ --- */
         #tag-toggle-container {
-            margin-top: 15px;
-            font-size: 0.9em;
             display: flex;
-            justify-content: center;
             align-items: center;
             gap: 10px;
         }
         
-        /* --- トグルスイッチのCSS (シンプルなスタイル) --- */
         .switch {
             position: relative;
             display: inline-block;
@@ -278,6 +287,10 @@
         input:checked + .slider:before {
             transform: translateX(20px);
         }
+        
+        #search-mode-container label {
+             cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -290,12 +303,24 @@
         <input type="text" id="search-input" placeholder="エンティティ名やタグを検索...">
         <button id="search-button">検索開始</button>
         
-        <div id="tag-toggle-container">
-            <span>タグ表示:</span>
-            <label class="switch">
-                <input type="checkbox" id="tag-toggle-switch" checked>
-                <span class="slider"></span>
-            </label>
+        <div id="search-options-container">
+            <div id="search-mode-container">
+                <span>検索モード:</span>
+                <label>
+                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND (厳しい)
+                </label>
+                <label>
+                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR (甘い)
+                </label>
+            </div>
+            
+            <div id="tag-toggle-container">
+                <span>タグ表示:</span>
+                <label class="switch">
+                    <input type="checkbox" id="tag-toggle-switch" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -308,17 +333,20 @@
 
     <script>
         // =======================================
+                // =======================================
         // | JavaScriptコード定義
         // =======================================
         const container = document.getElementById('history-list-container');
         const downloadContainer = document.getElementById('download-container');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
-        const tagToggleSwitch = document.getElementById('tag-toggle-switch'); // 💡 トグルスイッチ要素
+        const tagToggleSwitch = document.getElementById('tag-toggle-switch'); 
+        const searchModeRadios = document.querySelectorAll('input[name="search-mode"]');
+
 
         let integratedDataCache = null;
 
-        // === 💡 9ファイル設定（マジックナンバーは保持） ===
+        // === 9ファイル設定 ===
         const totalFiles = 9; 
         const fileBaseName = 'no';
         const fileExtension = '.json';
@@ -336,19 +364,39 @@
             }
         });
         
-        // 💡 タグトグルスイッチのリスナー
         tagToggleSwitch.addEventListener('change', function() {
-            // 表示を切り替えるために、現在のデータを再描画する
+            refreshDisplayBasedOnCurrentState();
+        });
+        
+        searchModeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                refreshDisplayBasedOnCurrentState();
+            });
+        });
+        
+        // --- 共通の再描画処理 ---
+        function refreshDisplayBasedOnCurrentState() {
             if (integratedDataCache) {
-                // 現在の検索クエリを再利用してフィルタリングを維持しつつ再描画
                 const currentQuery = searchInput.value.trim();
                 const filteredData = filterData(integratedDataCache, currentQuery); 
                 displayData(filteredData);
             }
-        });
+        }
+        
+        /**
+         * Wikipedia検索URLを生成するヘルパー関数
+         * リダイレクトを減らすため、&go=Goパラメーターを付与する。
+         * @param {string} query 検索クエリ
+         * @returns {string} Wikipedia検索URL
+         */
+        function createWikipediaSearchUrl(query) {
+            const encodedQuery = encodeURIComponent(query.trim());
+            if (!encodedQuery) return '#'; 
+            return `https://ja.wikipedia.org/w/index.php?search=${encodedQuery}&go=Go`;
+        }
 
 
-        // --- フィルタリング機能 (強化版) ---
+        // --- フィルタリング機能 (AND/OR検索を実装) ---
         function performLocalSearch() {
             const originalQuery = searchInput.value.trim(); 
 
@@ -361,15 +409,10 @@
                 return;
             }
 
-            // --- ▼ Wikipedia検索クエリの抽出ロジック（修正済） ▼ ---
-            // 1. 括弧内の文字列を抽出（全角・半角対応）
             const match = originalQuery.match(/[（\(](.+?)[）\)]/);
             const insideParentheses = match ? match[1].trim() : '';
-
-            // 2. 括弧の外側の文字列を抽出（全角・半角対応で括弧内を削除）
             const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/g, '').trim();
 
-            // 3. Wikipedia検索に使用するキーワードを決定
             let finalSearchQuery;
             if (outsideParentheses) {
                 finalSearchQuery = outsideParentheses;
@@ -378,28 +421,26 @@
             } else {
                 finalSearchQuery = originalQuery;
             }
-
-            // 検索URLを生成
-            const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(finalSearchQuery)}&go=Go`;
-
-            // --- ▲ Wikipedia検索クエリの抽出ロジック（修正済） ▲ ---
-
+            
+            const wikipediaSearchUrl = createWikipediaSearchUrl(finalSearchQuery);
 
             if (integratedDataCache) {
                 const filteredData = filterData(integratedDataCache, originalQuery); 
                 displayData(filteredData);
             }
 
-            // 検索ボタンをWikipediaリンクに変更
             searchButton.textContent = `📚 Wikipediaで "${finalSearchQuery}" を検索`; 
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 (タグ検索を含む) ---
+        // --- データをフィルタリングする関数 (AND/OR検索ロジックを含む) ---
         function filterData(data, query) {
             if (!query) return data;
 
-            const lowerCaseQuery = query.toLowerCase();
+            const currentSearchMode = document.querySelector('input[name="search-mode"]:checked').value;
+            const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 0); 
+            
+            if (keywords.length === 0) return data; 
 
             const filteredRegions = data.history_structured_list.regions.map(region => {
                 const filteredPeriods = region.periods.map(period => {
@@ -408,24 +449,25 @@
                         const entityName = entity.name || '';
                         const entityTags = entity.tags || [];
 
-                        // 1. エンティティ名全体でのマッチング
-                        const originalEntityLower = entityName.toLowerCase();
-
-                        // 2. 括弧内の文字列を抽出
-                        const match = entityName.match(/[（\(](.+?)[）\)]/);
-                        const insideParentheses = match ? match[1].toLowerCase() : '';
-
-                        // 3. 括弧の外側の文字列のみを抽出
-                        const outsideParentheses = entityName.replace(/[（\(].+?[）\)]/g, '').trim().toLowerCase();
-
-                        // 4. タグの中身のいずれかに一致するか
-                        const tagMatch = entityTags.some(tag => tag.toLowerCase().includes(lowerCaseQuery));
-
-                        // 検索クエリと比較する。いずれかに一致すれば true を返す。
-                        return originalEntityLower.includes(lowerCaseQuery) ||
-                               insideParentheses.includes(lowerCaseQuery) ||
-                               outsideParentheses.includes(lowerCaseQuery) ||
-                               tagMatch; 
+                        // 検索対象の文字列の準備
+                        const searchTargetStrings = [
+                            entityName.toLowerCase(), 
+                            entityName.replace(/[（\(].+?[）\)]/g, '').trim().toLowerCase(), 
+                            ...(entityName.match(/[（\(](.+?)[）\)]/) ? [entityName.match(/[（\(](.+?)[）\)]/)[1].toLowerCase()] : []), 
+                            ...entityTags.map(tag => tag.toLowerCase()) 
+                            // entity.wiki_link_queryを検索対象に含めたい場合は、ここに追記
+                        ].filter(s => s.length > 0);
+                        
+                        // --- AND/OR 検索ロジックの適用 ---
+                        if (currentSearchMode === 'AND') {
+                            return keywords.every(keyword => {
+                                return searchTargetStrings.some(target => target.includes(keyword));
+                            });
+                        } else {
+                            return keywords.some(keyword => {
+                                return searchTargetStrings.some(target => target.includes(keyword));
+                            });
+                        }
                     });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
@@ -462,12 +504,11 @@
             downloadContainer.appendChild(button);
         }
 
-        // --- JSON読み込みと統合 (デバッグ機能強化版) ---
+        // --- JSON読み込みと統合 ---
         async function loadAndIntegrateJson() {
             let integratedRegions = [];
 
             try {
-                // ... (JSON統合処理は変更なし) ...
                 for (let i = 1; i <= totalFiles; i++) {
                     const fileName = `${fileBaseName}${i}${fileExtension}`;
                     const url = basePath + fileName; 
@@ -515,12 +556,11 @@
             }
         }
 
-        // --- データの表示 (タグ表示とタグのWikiリンク処理を追加) ---
+        // --- データの表示 (wiki_link_query フィールドを優先) ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
             
-            // 💡 トグルスイッチの状態を取得
             const tagsVisible = tagToggleSwitch.checked;
 
             regions.forEach(region => {
@@ -550,13 +590,21 @@
                         const entityName = entity.name || '';
                         const entityTags = entity.tags || [];
 
-                        // 💡 リンク用クエリの生成: 括弧と中身を削除し、純粋なエンティティ名のみを抽出
-                        const linkQuery = entityName
-                            .replace(/[\(（][^）\)]*[\)）]/g, '')
-                            .trim(); 
-
+                        // 💡 リンク用クエリの決定ロジック
+                        let wikipediaQuery;
+                        
+                        if (entity.wiki_link_query) {
+                            // 1. wiki_link_query フィールドが存在する場合、それを最優先で使用
+                            wikipediaQuery = entity.wiki_link_query;
+                        } else {
+                            // 2. 存在しない場合、以前のロジック（括弧削除後のクリーンな名称）を使用
+                            wikipediaQuery = entityName
+                                .replace(/[\(（][^）\)]*[\)）]/g, '')
+                                .trim();
+                        }
+                        
                         // Wikipedia検索URLを生成
-                        const wikipediaSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(linkQuery)}&go=Go`;
+                        const wikipediaSearchUrl = createWikipediaSearchUrl(wikipediaQuery);
 
                         const link = document.createElement('a');
                         link.href = wikipediaSearchUrl;
@@ -565,18 +613,15 @@
 
                         listItem.appendChild(link);
 
-                        // 💡 tagsの表示 (ON/OFF切り替えとWikiリンクを追加)
                         if (tagsVisible) {
                             entityTags.forEach(tag => {
                                 const tagSpan = document.createElement('span');
                                 tagSpan.className = 'entity-tag';
                                 tagSpan.textContent = tag;
                                 
-                                // 💡 タグをクリックした際のWiki検索処理
                                 tagSpan.addEventListener('click', function(event) {
-                                    // 親要素のリンク動作を阻止しないように注意 (ここではa要素自体がタグに含まれないため不要だが、念のため)
                                     event.stopPropagation(); 
-                                    const tagSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(tag)}&go=Go`;
+                                    const tagSearchUrl = createWikipediaSearchUrl(tag);
                                     window.open(tagSearchUrl, '_blank');
                                 });
                                 
@@ -584,7 +629,7 @@
                             });
                         }
 
-                    entitiesList.appendChild(listItem);
+                        entitiesList.appendChild(listItem);
                     });
 
                     periodSection.appendChild(entitiesList);
@@ -601,6 +646,8 @@
 
         // 処理を開始
         loadAndIntegrateJson();
+    </script>
+ =======================================
     </script>
 </body>
 </html>
