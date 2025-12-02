@@ -1,697 +1,887 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>liefantidia 3 - 統合歴史データ</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        /* =======================================
-           | CSSスタイル定義
-           ======================================= */
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            line-height: 1.6;
-        }
-
-        header {
-            background-color: #007bff;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        header h1 {
-            margin: 0 0 5px 0;
-            font-weight: 700;
-        }
-
-        header p {
-            margin: 0;
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        #controls-container {
-            padding: 20px;
-            text-align: center;
-            background-color: #fff;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-        
-        #search-options-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 30px;
-            margin-top: 15px;
-            font-size: 0.9em;
-        }
-        
-        #search-mode-container {
-             display: flex;
-             align-items: center;
-             gap: 10px;
-        }
-
-        #download-container { 
-            max-width: 1200px;
-            margin: 0 auto 20px auto;
-            padding: 10px 20px;
-            text-align: right;
-        }
-
-        #download-button { 
-            padding: 10px 15px;
-            background-color: #ffc107;
-            color: #333;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 700;
-            transition: background-color 0.3s;
-        }
-
-        #download-button:hover {
-            background-color: #e0a800;
-        }
-
-
-        #search-input {
-            padding: 10px 15px;
-            width: 70%;
-            max-width: 400px;
-            border: 2px solid #ccc;
-            border-radius: 5px 0 0 5px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-            vertical-align: middle;
-        }
-
-        #search-input:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-        #search-button {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 0 5px 5px 0;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 700;
-            transition: background-color 0.3s;
-            vertical-align: middle;
-        }
-
-        #search-button:hover {
-            background-color: #0056b3;
-        }
-
-        #history-list-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* --- データ表示スタイル --- */
-
-        .loading-message,
-        .error-message,
-        .no-results-message {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.2em;
-            color: #555;
-        }
-
-        .error-message {
-            color: #d32f2f;
-            background-color: #ffebee;
-            border: 1px solid #d32f2f;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .no-results-message {
-            color: #d32f2f;
-            font-weight: bold;
-        }
-
-        .region-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .region-header {
-            background-color: #28a745;
-            color: white;
-            padding: 15px 20px;
-            font-size: 1.3em;
-            font-weight: 700;
-            border-bottom: 3px solid #1e7e34;
-        }
-
-        .period-section {
-            padding: 15px 20px;
-            border-top: 1px dashed #eee;
-        }
-
-        .period-upper {
-            background-color: #f8f9fa;
-            color: #007bff;
-            font-size: 1.1em;
-            font-weight: 700;
-            padding: 8px 10px;
-            border-left: 5px solid #007bff;
-            margin-bottom: 10px;
-        }
-
-        .middle-entities-list {
-            list-style-type: none;
-            padding-left: 15px;
-            margin: 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .middle-entities-list li {
-            padding: 5px 12px;
-            background-color: #e9ecef;
-            border-radius: 3px;
-            font-size: 0.95em;
-            transition: background-color 0.2s;
-            display: flex; 
-            align-items: center;
-        }
-
-        .middle-entities-list li:hover {
-            background-color: #dee2e6;
-        }
-
-        .middle-entities-list a {
-            text-decoration: none;
-            color: #495057;
-            font-weight: 400;
-            margin-right: 8px; 
-        }
-
-        .middle-entities-list a:hover {
-            color: #333;
-            text-decoration: underline;
-        }
-
-        .entity-tag {
-            background-color: #007bff;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 0.75em;
-            font-weight: 700;
-            margin-left: 4px;
-            white-space: nowrap; 
-            cursor: pointer; 
-        }
-
-        .entity-tag:hover {
-            background-color: #0056b3;
-        }
-
-        #tag-toggle-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 20px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #28a745;
-        }
-
-        input:focus + .slider {
-            box-shadow: 0 0 1px #28a745;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(20px);
-        }
-        
-        #search-mode-container label {
-             cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>liefantidia 3</h1>
-        <p>JSONファイルを統合し、地域・時代・エンティティで整理された履歴データを表示します。</p>
-    </header>
-
-    <div id="controls-container">
-        <input type="text" id="search-input" placeholder="エンティティ名やタグを検索...">
-        <button id="search-button">検索開始</button>
-        
-        <div id="search-options-container">
-            <div id="search-mode-container">
-                <span>検索モード:</span>
-                <label>
-                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND (厳しい)
-                </label>
-                <label>
-                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR (甘い)
-                </label>
-            </div>
-            
-            <div id="tag-toggle-container">
-                <span>タグ表示:</span>
-                <label class="switch">
-                    <input type="checkbox" id="tag-toggle-switch" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <div id="download-container"></div>
-
-    <div id="history-list-container">
-        <div class="loading-message">データをロード中... しばらくお待ちください。</div>
-    </div>
-
-
-    <script>
-                // =======================================
-        // | JavaScriptコード定義
-        // =======================================
-        const container = document.getElementById('history-list-container');
-        const downloadContainer = document.getElementById('download-container');
-        const searchInput = document.getElementById('search-input');
-        const searchButton = document.getElementById('search-button');
-        const tagToggleSwitch = document.getElementById('tag-toggle-switch'); 
-        const searchModeRadios = document.querySelectorAll('input[name="search-mode"]');
-
-
-        let integratedDataCache = null;
-
-        // === 9ファイル設定 ===
-        const totalFiles = 9; 
-        const fileBaseName = 'no';
-        const fileExtension = '.json';
-        const basePath = './'; 
-        // ============================
-
-        // --- イベントリスナー (変更なし) ---
-        searchButton.addEventListener('click', function() {
-            performLocalSearch();
-        });
-
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performLocalSearch();
-            }
-        });
-        
-        tagToggleSwitch.addEventListener('change', function() {
-            refreshDisplayBasedOnCurrentState();
-        });
-        
-        searchModeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                refreshDisplayBasedOnCurrentState();
-            });
-        });
-        
-        // --- 共通の再描画処理 (変更なし) ---
-        function refreshDisplayBasedOnCurrentState() {
-            if (integratedDataCache) {
-                const currentQuery = searchInput.value.trim();
-                const filteredData = filterData(integratedDataCache, currentQuery); 
-                displayData(filteredData);
-            }
-        }
-        
-        /**
-         * Wikipedia検索URLを生成するヘルパー関数
-         */
-        function createWikipediaSearchUrl(query) {
-            const encodedQuery = encodeURIComponent(query.trim());
-            if (!encodedQuery) return '#'; 
-            return `https://ja.wikipedia.org/w/index.php?search=${encodedQuery}&go=Go`;
-        }
-
-
-        // --- フィルタリング機能 (AND/OR検索を実装) ---
-        function performLocalSearch() {
-            const originalQuery = searchInput.value.trim(); 
-
-            if (!originalQuery) {
-                if (integratedDataCache) {
-                    displayData(integratedDataCache);
-                }
-                searchButton.textContent = '検索開始';
-                searchButton.onclick = performLocalSearch;
-                return;
-            }
-
-            const match = originalQuery.match(/[（\(](.+?)[）\)]/);
-            const insideParentheses = match ? match[1].trim() : '';
-            const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/g, '').trim();
-
-            let finalSearchQuery;
-            if (outsideParentheses) {
-                finalSearchQuery = outsideParentheses;
-            } else if (insideParentheses) {
-                finalSearchQuery = insideParentheses;
-            } else {
-                finalSearchQuery = originalQuery;
-            }
-            
-            const wikipediaSearchUrl = createWikipediaSearchUrl(finalSearchQuery);
-
-            if (integratedDataCache) {
-                const filteredData = filterData(integratedDataCache, originalQuery); 
-                displayData(filteredData);
-            }
-
-            searchButton.textContent = `📚 Wikipediaで "${finalSearchQuery}" を検索`; 
-            searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
-        }
-
-        /**
-         * データをフィルタリングし、OR検索の場合は関連度でソートする関数
-         */
-        function filterData(data, query) {
-            if (!query) return data;
-
-            const currentSearchMode = document.querySelector('input[name="search-mode"]:checked').value;
-            const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 0); 
-            
-            if (keywords.length === 0) return data; 
-
-            const filteredRegions = data.history_structured_list.regions.map(region => {
-                
-                const filteredPeriods = region.periods.map(period => {
-
-                    const entitiesWithScore = period.middle_level_entities.map(entity => {
-                        const entityName = entity.name || '';
-                        const entityTags = entity.tags || [];
-
-                        // 検索対象の文字列
-                        const entityNameLower = entityName.toLowerCase();
-                        const cleanNameLower = entityName.replace(/[\(（].+?[\)）]/g, '').trim().toLowerCase();
-                        const tagsLower = entityTags.map(tag => tag.toLowerCase());
-                        
-                        // 💡 スコア計算用変数
-                        let score = 0;
-                        let isMatch = false; // フィルタリングに合格したかどうか
-
-                        const matchedKeywords = new Set(); // 一致したキーワードを記録 (重複回避)
-                        
-                        // --- フィルタリングとスコアリング ---
-                        keywords.forEach(keyword => {
-                            let keywordMatch = false;
-                            
-                            // 1. 正式名称（cleanNameLower）にキーワードが含まれる場合: +3点
-                            if (cleanNameLower.includes(keyword)) {
-                                score += 3;
-                                keywordMatch = true;
-                            } 
-                            // 2. エンティティ名全体（entityNameLower）に含まれる場合: +1点
-                            else if (entityNameLower.includes(keyword)) {
-                                score += 1;
-                                keywordMatch = true;
-                            }
-                            // 3. タグに含まれる場合: +1点
-                            else if (tagsLower.some(tag => tag.includes(keyword))) {
-                                score += 1;
-                                keywordMatch = true;
-                            }
-                            
-                            // キーワードがどこかに一致した場合、マッチしたキーワードセットに追加
-                            if (keywordMatch) {
-                                matchedKeywords.add(keyword);
-                                isMatch = true;
-                            }
-                        });
-                        
-                        // 💡 AND検索の判定
-                        if (currentSearchMode === 'AND') {
-                            // ANDモード: すべてのキーワードが最低1回一致している必要がある
-                            isMatch = matchedKeywords.size === keywords.length;
-                        }
-                        
-                        if (isMatch) {
-                            // スコアにキーワード一致数を加算 (多ければ多いほど良い)
-                            score += matchedKeywords.size * 5; 
-                            return { ...entity, score: score };
-                        }
-                        return null;
-                    }).filter(e => e !== null);
-                    
-                    // フィルタリング処理（この時点ではソートはしない）
-                    return entitiesWithScore.length > 0 ? { ...period, middle_level_entities: entitiesWithScore } : null;
-                }).filter(p => p !== null);
-
-                return filteredPeriods.length > 0 ? { ...region, periods: filteredPeriods } : null;
-            }).filter(r => r !== null);
-            
-            
-            // --- 💡 最終ソートと再構成 ---
-            
-            if (currentSearchMode === 'OR') {
-                // 各期間内でスコア順にソート
-                const sortedRegions = filteredRegions.map(region => {
-                    const sortedPeriods = region.periods.map(period => {
-                        // スコアに基づいてエンティティをソート
-                        const sortedEntities = period.middle_level_entities.sort((a, b) => b.score - a.score);
-                        return { ...period, middle_level_entities: sortedEntities };
-                    });
-                    return { ...region, periods: sortedPeriods };
-                });
-                return { history_structured_list: { regions: sortedRegions } };
-            }
-
-
-            return { history_structured_list: { regions: filteredRegions } };
-        }
-
-        // --- ダウンロード機能 (変更なし) ---
-        function createDownloadButton(data) {
-            downloadContainer.innerHTML = ''; 
-
-            const button = document.createElement('button');
-            button.id = 'download-button';
-            button.textContent = '💾 統合JSONデータをダウンロード';
-
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            button.onclick = () => {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'integrated_history_data.json'; 
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url); 
-            };
-
-            downloadContainer.appendChild(button);
-        }
-
-        // --- JSON読み込みと統合 (変更なし) ---
-        async function loadAndIntegrateJson() {
-            let integratedRegions = [];
-
-            try {
-                for (let i = 1; i <= totalFiles; i++) {
-                    const fileName = `${fileBaseName}${i}${fileExtension}`;
-                    const url = basePath + fileName; 
-
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                        throw new Error(`🚨 ネットワーク/ファイル存在エラー: ${url}が見つからないか、読み込み失敗 (Status: ${response.status})。`);
-                    }
-
-                    const text = await response.text();
-
-                    let jsonContent;
-                    try {
-                        const trimmedText = text.trim();
-
-                        if (trimmedText === '') {
-                            throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」の内容が空文字列、または空白文字のみでした。`);
-                        }
-
-                        jsonContent = JSON.parse(trimmedText);
-                    } catch (e) {
-                        const snippet = text.substring(0, 200) + (text.length > 200 ? '...' : '');
-                        console.error(`デバッグ情報 - ファイル: ${fileName}`, `エラー: ${e.message}`, `内容の先頭スニペット: ${snippet}`);
-
-                        throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」でパース失敗。詳細: ${e.message}。コンソールで内容の先頭200文字を確認してください。`);
-                    }
-
-                    if (jsonContent && jsonContent.history_structured_list && jsonContent.history_structured_list.regions) {
-                        integratedRegions.push(...jsonContent.history_structured_list.regions);
-                    } else {
-                         throw new Error(`ファイル「${fileName}」のデータ構造が期待された形式ではありませんでした。「history_structured_list.regions」がありません。`);
-                    }
-                }
-
-                const finalIntegratedData = { history_structured_list: { regions: integratedRegions } };
-                integratedDataCache = finalIntegratedData;
-
-                displayData(finalIntegratedData); 
-                createDownloadButton(finalIntegratedData); 
-
-            } catch (error) {
-                container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがすべて存在し、有効な形式であることを確認してください。</div>`;
-                downloadContainer.innerHTML = ''; 
-                console.error("統合処理の致命的エラー:", error);
-            }
-        }
-
-        // --- データの表示 (wiki_link_query フィールドを優先) ---
-        function displayData(integratedData) {
-            container.innerHTML = ''; 
-            const regions = integratedData.history_structured_list.regions;
-            
-            const tagsVisible = tagToggleSwitch.checked;
-
-            regions.forEach(region => {
-                const regionCard = document.createElement('div');
-                regionCard.className = 'region-card';
-
-                const regionHeader = document.createElement('div');
-                regionHeader.className = 'region-header';
-                regionHeader.textContent = `地域 ${region.region_id}: ${region.region_name}`;
-                regionCard.appendChild(regionHeader);
-
-                region.periods.forEach(period => {
-                    const periodSection = document.createElement('div');
-                    periodSection.className = 'period-section';
-
-                    const upperLevel = document.createElement('div');
-                    upperLevel.className = 'period-upper';
-                    upperLevel.textContent = period.upper_level;
-                    periodSection.appendChild(upperLevel);
-
-                    const entitiesList = document.createElement('ul');
-                    entitiesList.className = 'middle-entities-list';
-
-                    period.middle_level_entities.forEach(entity => {
-                        const listItem = document.createElement('li');
-
-                        const entityName = entity.name || '';
-                        const entityTags = entity.tags || [];
-
-                        // リンク用クエリの決定ロジック (wiki_link_query優先)
-                        let wikipediaQuery;
-                        
-                        if (entity.wiki_link_query) {
-                            wikipediaQuery = entity.wiki_link_query;
-                        } else {
-                            wikipediaQuery = entityName
-                                .replace(/[\(（][^）\)]*[\)）]/g, '')
-                                .trim();
-                        }
-                        
-                        // Wikipedia検索URLを生成
-                        const wikipediaSearchUrl = createWikipediaSearchUrl(wikipediaQuery);
-
-                        const link = document.createElement('a');
-                        link.href = wikipediaSearchUrl;
-                        link.textContent = entityName; 
-                        link.target = '_blank'; 
-
-                        listItem.appendChild(link);
-
-                        if (tagsVisible) {
-                            entityTags.forEach(tag => {
-                                const tagSpan = document.createElement('span');
-                                tagSpan.className = 'entity-tag';
-                                tagSpan.textContent = tag;
-                                
-                                tagSpan.addEventListener('click', function(event) {
-                                    event.stopPropagation(); 
-                                    const tagSearchUrl = createWikipediaSearchUrl(tag);
-                                    window.open(tagSearchUrl, '_blank');
-                                });
-                                
-                                listItem.appendChild(tagSpan);
-                            });
-                        }
-
-                        entitiesList.appendChild(listItem);
-                    });
-
-                    periodSection.appendChild(entitiesList);
-                    regionCard.appendChild(periodSection);
-                });
-
-                container.appendChild(regionCard);
-            });
-
-            if (regions.length === 0) {
-                 container.innerHTML = '<p class="no-results-message">検索条件に一致するエンティティは見つかりませんでした。</p>';
-            }
-        }
-
-        // 処理を開始
-        loadAndIntegrateJson();
-    </script>
-</body>
-</html>
+{
+  "history_structured_list": {
+    "regions": [
+      {
+        "region_id": "I",
+        "region_name": "中国大陸・中原および周辺政権（～現在）",
+        "periods": [
+          {
+            "upper_level": "先史～先古代（～紀元前1600年頃）",
+            "middle_level_entities": [
+              {"name": "仰韶文化", "tags": ["新石器", "黄河中流"]},
+              {"name": "龍山文化", "tags": ["新石器", "黄河下流"]},
+              {"name": "二里頭文化", "tags": ["青銅器", "夏代"]},
+              {"name": "紅山文化", "tags": ["新石器", "東北"]},
+              {"name": "良渚文化", "tags": ["新石器", "長江下流"]},
+              {"name": "大汶口文化", "tags": ["新石器", "山東"]},
+              {"name": "河姆渡文化", "tags": ["新石器", "長江下流"]},
+              {"name": "馬家窯文化", "tags": ["新石器", "黄河上流"]},
+              {"name": "屈家嶺文化", "tags": ["新石器", "長江中流"]},
+              {"name": "石家河文化", "tags": ["新石器", "長江中流"]},
+              {"name": "陶寺文化", "tags": ["新石器", "山西"]},
+              {"name": "齊家文化", "tags": ["青銅器", "西北"]},
+              {"name": "卡約文化", "tags": ["青銅器", "青海"]},
+              {"name": "三星堆文化", "tags": ["青銅器", "四川"]},
+              {"name": "百越諸部族", "tags": ["先住民族", "南方"]},
+              {"name": "東夷諸部族", "tags": ["先住民族", "東方"]},
+              {"name": "氐羌系部族", "tags": ["先住民族", "西方"]}
+            ]
+          },
+          {
+            "upper_level": "三代～春秋戦国（紀元前1600～221年）",
+            "middle_level_entities": [
+              {"name": "夏王朝", "tags": ["伝説", "王朝", "中原"]},
+              {"name": "商（殷）王朝", "tags": ["青銅器", "中原"]},
+              {"name": "西周", "tags": ["封建", "中原"]},
+              {"name": "東周", "tags": ["春秋戦国", "中原"]},
+              {"name": "春秋十二諸侯（齊・楚・燕・秦・晋・魯・宋・衛・陳・蔡・曹・鄭）", "tags": ["春秋", "諸侯国"]},
+              {"name": "許・滕・薛・邾・莒・費・邾・鄣・譚・遂・杞・紀・鄅・向・邗・鍾離", "tags": ["春秋", "小諸侯国"]},
+              {"name": "戦国七雄（韓・魏・趙・燕・齊・楚・秦）", "tags": ["戦国", "強国"]},
+              {"name": "巴・蜀・義渠・義渠戎・大荔・林胡・樓煩・東胡・中山・宋・代・越・吳・于越・句吳・姑蔑・閩越・南越・甌越・駱越", "tags": ["周辺国", "非華夏", "戦国"]}
+            ]
+          },
+          {
+            "upper_level": "秦漢～三国（紀元前221～280年）",
+            "middle_level_entities": [
+              {"name": "秦帝国", "tags": ["統一王朝", "中央集権"]},
+              {"name": "楚漢戦争期十八諸侯（西楚・漢・趙・代・齊・燕・衡山・淮南・臨江・长沙・九江・西魏・塞・翟・恒山・韓・殷・燕）", "tags": ["内乱", "諸侯"]},
+              {"name": "西漢（前漢）", "tags": ["統一王朝", "初期帝国"]},
+              {"name": "新（王莽）", "tags": ["短命", "簒奪政権"]},
+              {"name": "更始帝政権", "tags": ["短命", "復興漢"]},
+              {"name": "玄漢（公孫述）", "tags": ["短命", "地方政権"]},
+              {"name": "成家（赤眉）", "tags": ["農民反乱", "短命政権"]},
+              {"name": "東漢（後漢）", "tags": ["統一王朝", "中期帝国"]},
+              {"name": "三国（曹魏・蜀漢・孫呉）", "tags": ["三国時代", "分裂期"]},
+              {"name": "代国（鮮卑拓跋氏）", "tags": ["北方民族", "鮮卑"]},
+              {"name": "高句麗（初期）", "tags": ["朝鮮", "初期三国"]},
+              {"name": "夫余", "tags": ["朝鮮", "満州"]},
+              {"name": "沃沮", "tags": ["朝鮮", "小国"]},
+              {"name": "百済（初期）", "tags": ["朝鮮", "初期三国"]},
+              {"name": "新羅（初期）", "tags": ["朝鮮", "初期三国"]},
+              {"name": "伽倻諸国", "tags": ["朝鮮", "小国連合"]},
+              {"name": "耽羅", "tags": ["朝鮮", "島嶼"]},
+              {"name": "漢四郡（楽浪・帯方・玄菟・臨屯四郡）", "tags": ["朝鮮", "中国支配"]}
+            ]
+          },
+          {
+            "upper_level": "魏晋南北朝（220～589年）",
+            "middle_level_entities": [
+              {"name": "西晋", "tags": ["統一王朝", "短命"]},
+              {"name": "東晋", "tags": ["南朝", "漢族"]},
+              {"name": "十六国（漢趙・後趙・成漢・前涼・後涼・南涼・西涼・北涼・前燕・後燕・南燕・北燕・前秦・後秦・西秦・夏）", "tags": ["五胡十六国", "北方民族"]},
+              {"name": "北魏・東魏・西魏・北斉・北周", "tags": ["北朝", "鮮卑系"]},
+              {"name": "南朝（劉宋・南齊・梁・陳）", "tags": ["南朝", "漢族"]},
+              {"name": "冉魏", "tags": ["短命", "漢族"]},
+              {"name": "翟魏", "tags": ["短命", "丁零族"]},
+              {"name": "仇池国", "tags": ["地方政権", "氐族"]},
+              {"name": "吐谷渾", "tags": ["チベット系", "青海"]},
+              {"name": "宕昌", "tags": ["チベット系", "地方政権"]},
+              {"name": "鄧至", "tags": ["チベット系", "地方政権"]},
+              {"name": "高昌諸国（麴氏・張氏・馬氏）", "tags": ["西域", "オアシス"]},
+              {"name": "于闐", "tags": ["西域", "オアシス"]},
+              {"name": "焉耆", "tags": ["西域", "オアシス"]},
+              {"name": "龟兹", "tags": ["西域", "オアシス"]},
+              {"name": "疏勒", "tags": ["西域", "オアシス"]},
+              {"name": "嚈噠（エフタル）", "tags": ["遊牧民", "中央アジア"]}
+            ]
+          },
+          {
+            "upper_level": "隋唐五代十国（581～960年）",
+            "middle_level_entities": [
+              {"name": "隋王朝", "tags": ["統一王朝", "短命"]},
+              {"name": "唐王朝", "tags": ["統一王朝", "国際帝国"]},
+              {"name": "武周", "tags": ["短命", "女帝"]},
+              {"name": "後梁・後唐・後晋・後漢・後周（五代）", "tags": ["五代", "分裂期"]},
+              {"name": "十国（呉・南唐・吳越・閩・南漢・楚・前蜀・後蜀・荊南・北漢）", "tags": ["十国", "地方政権"]},
+              {"name": "大義寧（梁師都）", "tags": ["唐代反乱", "短命"]},
+              {"name": "涼（李軌）", "tags": ["唐代反乱", "短命"]},
+              {"name": "夏（竇建徳）", "tags": ["唐代反乱", "短命"]},
+              {"name": "鄭（王世充）", "tags": ["唐代反乱", "短命"]},
+              {"name": "岐（李茂貞）", "tags": ["五代十国", "短命"]},
+              {"name": "燕（高開道・劉黒闥・安禄山・史思明）", "tags": ["安史の乱", "反乱政権"]},
+              {"name": "南詔", "tags": ["雲南", "地方政権"]},
+              {"name": "大理国", "tags": ["雲南", "地方政権"]},
+              {"name": "吐蕃帝国", "tags": ["チベット", "強国"]},
+              {"name": "渤海", "tags": ["朝鮮", "満州", "靺鞨系"]},
+              {"name": "黒水靺鞨", "tags": ["満州", "女真系"]},
+              {"name": "契丹（遼初期）", "tags": ["遊牧民", "北方"]},
+              {"name": "南平（高季興）", "tags": ["十国", "荊南"]}
+            ]
+          },
+          {
+            "upper_level": "宋遼金元（960～1368年）",
+            "middle_level_entities": [
+              {"name": "北宋", "tags": ["漢族", "統一王朝"]},
+              {"name": "南宋", "tags": ["漢族", "江南政権"]},
+              {"name": "遼（契丹）", "tags": ["北方民族", "征服王朝"]},
+              {"name": "西遼（カラキタイ）", "tags": ["中央アジア", "契丹系"]},
+              {"name": "金（女真）", "tags": ["北方民族", "征服王朝"]},
+              {"name": "西夏", "tags": ["タングート", "西北"]},
+              {"name": "大理国", "tags": ["雲南", "地方政権"]},
+              {"name": "吐蕃諸部（唃廝囉・角斯羅・青唐・宗喀）", "tags": ["チベット", "分裂期"]},
+              {"name": "大越（李朝・陳朝）", "tags": ["ベトナム", "独立王朝"]},
+              {"name": "東夏", "tags": ["短命", "女真系"]},
+              {"name": "大寧", "tags": ["短命", "女真系"]},
+              {"name": "高麗（後期）", "tags": ["朝鮮", "統一国家"]},
+              {"name": "蒙古帝国（1206～）", "tags": ["遊牧民", "世界帝国"]},
+              {"name": "大蒙古国", "tags": ["遊牧民", "世界帝国"]}
+            ]
+          },
+          {
+            "upper_level": "明清（1368～1912年）",
+            "middle_level_entities": [
+              {"name": "明王朝", "tags": ["漢族", "統一王朝"]},
+              {"name": "北元", "tags": ["モンゴル", "北方"]},
+              {"name": "タタール", "tags": ["モンゴル", "部族"]},
+              {"name": "瓦剌（オイラト）", "tags": ["モンゴル", "部族"]},
+              {"name": "大順（李自成）", "tags": ["農民反乱", "短命"]},
+              {"name": "大西（張献忠）", "tags": ["農民反乱", "短命"]},
+              {"name": "南明（弘光・隆武・紹武・永暦）", "tags": ["明朝残党", "抵抗政権"]},
+              {"name": "明鄭（延平王国）", "tags": ["台湾", "抵抗政権"]},
+              {"name": "順治・康熙期三藩（吳三桂・耿精忠・尚可喜）", "tags": ["地方反乱", "清代初期"]},
+              {"name": "後金", "tags": ["女真", "清の前身"]},
+              {"name": "清王朝", "tags": ["満州族", "征服王朝"]},
+              {"name": "準噶爾汗国", "tags": ["モンゴル", "新疆"]},
+              {"name": "東トルキスタン・イリ地方政権", "tags": ["新疆", "地方政権"]},
+              {"name": "土爾扈特汗国", "tags": ["モンゴル", "部族"]},
+              {"name": "杜文秀政権（平南国）", "tags": ["雲南", "イスラム反乱"]},
+              {"name": "太平天国", "tags": ["清代反乱", "宗教運動"]},
+              {"name": "捻軍", "tags": ["清代反乱", "農民"]},
+              {"name": "天地会諸政権", "tags": ["秘密結社", "反清復明"]},
+              {"name": "大小和卓政権", "tags": ["新疆", "イスラム反乱"]}
+            ]
+          },
+          {
+            "upper_level": "近代～現代転換期（1912～1949）",
+            "middle_level_entities": [
+              {"name": "中華民国（北京政府・北洋軍閥期）", "tags": ["軍閥時代", "初期政府"]},
+              {"name": "中華民国（国民政府・南京十年・重慶政府）", "tags": ["国民党", "統一政府"]},
+              {"name": "中華蘇維埃共和国", "tags": ["共産党", "初期政権"]},
+              {"name": "中華共和国人民革命政府（福建事変）", "tags": ["短命", "反蒋"]},
+              {"name": "晉綏政府", "tags": ["軍閥", "閻錫山"]},
+              {"name": "冀東防共自治政府", "tags": ["日本傀儡", "華北"]},
+              {"name": "察南・晋北・蒙疆各自治政府", "tags": ["日本傀儡", "内モンゴル"]},
+              {"name": "蒙古軍政府・蒙古聯合自治政府・蒙疆聯合自治政府", "tags": ["日本傀儡", "内モンゴル"]},
+              {"name": "汪兆銘南京国民政府", "tags": ["日本傀儡", "協和運動"]},
+              {"name": "満洲国", "tags": ["日本傀儡", "東北"]},
+              {"name": "東トルキスタン第一共和国（1933）", "tags": ["新疆", "イスラム独立"]},
+              {"name": "東トルキスタン第二共和国（1944-1949）", "tags": ["新疆", "ソ連支援"]},
+              {"name": "西藏地方（噶廈政府）", "tags": ["チベット", "地方政権"]},
+              {"name": "広東革命政府（陳炯明）", "tags": ["地方政権", "軍閥"]},
+              {"name": "護国軍政府（蔡鍔）", "tags": ["地方政権", "反袁"]},
+              {"name": "護法軍政府（孫文）", "tags": ["地方政権", "南派"]},
+              {"name": "広州国民政府（1925）", "tags": ["国民党", "初期政府"]}
+            ]
+          },
+          {
+            "upper_level": "現代国家（1949～現在）",
+            "middle_level_entities": [
+              {"name": "中華人民共和国", "tags": ["現代国家", "社会主義"]},
+              {"name": "中華民国（台湾地区）", "tags": ["現代国家", "台湾"]},
+              {"name": "香港特別行政区", "tags": ["現代国家", "特別行政区"]},
+              {"name": "マカオ特別行政区", "tags": ["現代国家", "特別行政区"]}
+            ]
+          }
+        ]
+      },
+      {
+        "region_id": "II",
+        "region_name": "朝鮮半島全域",
+        "periods": [
+          {
+            "upper_level": "先史～三国時代（～668年）",
+            "middle_level_entities": [
+              {"name": "檀君神話期", "tags": ["神話", "伝説"]},
+              {"name": "古朝鮮（箕子朝鮮・衛氏朝鮮）", "tags": ["初期国家", "伝説"]},
+              {"name": "辰国", "tags": ["三韓前身", "初期国家"]},
+              {"name": "三韓（馬韓54国・辰韓12国・弁韓12国）", "tags": ["初期国家", "小国連合"]},
+              {"name": "沃沮", "tags": ["小国", "満州"]},
+              {"name": "東濊", "tags": ["小国", "東海岸"]},
+              {"name": "扶余", "tags": ["初期国家", "満州"]},
+              {"name": "高句麗", "tags": ["三国時代", "強国"]},
+              {"name": "百済", "tags": ["三国時代", "西南部"]},
+              {"name": "新羅", "tags": ["三国時代", "東南部"]},
+              {"name": "伽倻連盟（大伽倻・安羅・金官伽倻等）", "tags": ["小国連合", "南部"]},
+              {"name": "耽羅国", "tags": ["島嶼", "済州島"]},
+              {"name": "于山国", "tags": ["島嶼", "鬱陵島"]},
+              {"name": "卒本扶余", "tags": ["扶余", "初期国家"]},
+              {"name": "東扶余", "tags": ["扶余", "初期国家"]},
+              {"name": "靺鞨諸部", "tags": ["満州", "女真系"]}
+            ]
+          },
+          {
+            "upper_level": "南北国～高麗（668～1392年）",
+            "middle_level_entities": [
+              {"name": "統一新羅", "tags": ["統一国家", "南部"]},
+              {"name": "渤海", "tags": ["南北国", "満州", "靺鞨系"]},
+              {"name": "後高句麗（弓裔）", "tags": ["後三国", "短命"]},
+              {"name": "後百済（甄萱）", "tags": ["後三国", "短命"]},
+              {"name": "泰封（宮例）", "tags": ["後三国", "短命"]},
+              {"name": "高麗", "tags": ["統一国家", "王氏"]},
+              {"name": "武臣政権", "tags": ["軍事政権", "高麗期"]},
+              {"name": "元朝征東行省", "tags": ["元支配", "高麗期"]},
+              {"name": "恭愍王復辟政権", "tags": ["高麗", "反元"]},
+              {"name": "双城総管府", "tags": ["元支配", "東北部"]},
+              {"name": "東寧府", "tags": ["元支配", "西北部"]}
+            ]
+          },
+          {
+            "upper_level": "李氏朝鮮～大韓帝国（1392～1910）",
+            "middle_level_entities": [
+              {"name": "李氏朝鮮（1392-1897）", "tags": ["統一国家", "儒教国"]},
+              {"name": "大韓帝国（1897-1910）", "tags": ["帝政", "近代化"]},
+              {"name": "壬乱期臨時政府", "tags": ["豊臣秀吉", "戦時政権"]},
+              {"name": "丙子胡乱期三田渡政権", "tags": ["清朝", "戦時政権"]},
+              {"name": "李舜臣全羅道水軍政府", "tags": ["豊臣秀吉", "戦時政権"]},
+              {"name": "儒生義軍諸政権", "tags": ["地方反乱", "義兵"]}
+            ]
+          },
+          {
+            "upper_level": "日本統治～現代（1910～現在）",
+            "middle_level_entities": [
+              {"name": "朝鮮総督府", "tags": ["日本統治", "植民地"]},
+              {"name": "上海臨時政府", "tags": ["独立運動", "臨時政府"]},
+              {"name": "大韓民国臨時政府（重慶・南京）", "tags": ["独立運動", "臨時政府"]},
+              {"name": "朝鮮人民共和国（1945短命）", "tags": ["短命", "左派"]},
+              {"name": "ソ連民政庁", "tags": ["占領統治", "北部"]},
+              {"name": "米軍政庁", "tags": ["占領統治", "南部"]},
+              {"name": "朝鮮民主主義人民共和国", "tags": ["現代国家", "北朝鮮"]},
+              {"name": "大韓民国", "tags": ["現代国家", "韓国"]}
+            ]
+          }
+        ]
+      },
+      {
+        "region_id": "III",
+        "region_name": "日本列島・琉球・蝦夷",
+        "periods": [
+          {
+            "upper_level": "先史～奈良・平安（～1185年）",
+            "middle_level_entities": [
+              {"name": "縄文諸文化", "tags": ["先史", "狩猟採集"]},
+              {"name": "弥生諸国（奴国・伊都国・不弥国等）", "tags": ["初期国家", "稲作"]},
+              {"name": "邪馬台国連合", "tags": ["古代", "連合"]},
+              {"name": "倭の五王時代", "tags": ["古代", "大陸交流"]},
+              {"name": "大和王権", "tags": ["古代", "中央政権"]},
+              {"name": "出雲国造", "tags": ["古代", "地方豪族"]},
+              {"name": "越国・毛野", "tags": ["古代", "地方豪族"]},
+              {"name": "蝦夷（粛慎）", "tags": ["先住民族", "東北", "北海道"]},
+              {"name": "隼人", "tags": ["先住民族", "南九州"]},
+              {"name": "琉球古王国（三山時代：中山・北山・南山）", "tags": ["沖縄", "分立期"]},
+              {"name": "律令国家（飛鳥・奈良・平安朝廷）", "tags": ["中央集権", "朝廷"]},
+              {"name": "平将門新皇政権", "tags": ["反乱", "短命"]},
+              {"name": "藤原純友国庁", "tags": ["反乱", "海賊"]},
+              {"name": "前九年・後三年合戦期東北独立政権", "tags": ["奥州藤原", "地方政権"]}
+            ]
+          },
+          {
+            "upper_level": "鎌倉～戦国（1185～1603年）",
+            "middle_level_entities": [
+              {"name": "鎌倉幕府", "tags": ["武家政権", "東国"]},
+              {"name": "建武新政", "tags": ["短命", "後醍醐天皇"]},
+              {"name": "南北朝（南朝・北朝）", "tags": ["分裂", "朝廷"]},
+              {"name": "室町幕府", "tags": ["武家政権", "京都"]},
+              {"name": "奥州藤原氏", "tags": ["地方政権", "東北"]},
+              {"name": "足利尊氏初期政権", "tags": ["室町幕府", "初期"]},
+              {"name": "足利直義政権", "tags": ["室町幕府", "初期"]},
+              {"name": "戦国大名（武田・上杉・北条・織田・毛利・島津・長宗我部・龍造寺・大友・伊達・最上・尼子・三好・斎藤・朝倉・浅井・六角・京極・赤松・大内・陶氏・少弐・渋川・佐竹・南部・津軽等）", "tags": ["戦国時代", "地方勢力"]},
+              {"name": "琉球王国（第一尚氏・第二尚氏）", "tags": ["沖縄", "統一国家"]},
+              {"name": "対馬宗氏", "tags": ["地方勢力", "対朝鮮"]},
+              {"name": "松前藩（蝦夷地）", "tags": ["江戸時代", "北海道"]}
+            ]
+          },
+          {
+            "upper_level": "江戸～明治（1603～1912）",
+            "middle_level_entities": [
+              {"name": "江戸幕府", "tags": ["武家政権", "封建制"]},
+              {"name": "薩摩藩琉球支配", "tags": ["沖縄", "間接支配"]},
+              {"name": "松前藩蝦夷支配", "tags": ["北海道", "間接支配"]},
+              {"name": "蝦夷共和国（1789）", "tags": ["短命", "独立運動"]},
+              {"name": "箱館政権（旧幕府軍）", "tags": ["戊辰戦争", "短命"]},
+              {"name": "大日本帝国", "tags": ["近代国家", "立憲君主制"]}
+            ]
+          },
+          {
+            "upper_level": "現代（1945～現在）",
+            "middle_level_entities": [
+              {"name": "連合軍占領下日本", "tags": ["戦後", "GHQ"]},
+              {"name": "日本国", "tags": ["現代国家", "平和主義"]}
+            ]
+          }
+        ]
+      },
+       {
+  "history_structured_list": {
+    "regions": [
+      {
+        "region_id": "IV",
+        "region_name": "インドシナ半島（ベトナム・ラオス・カンボジア・タイ・ミャンマー）",
+        "periods": [
+          {
+            "upper_level": "先史～10世紀",
+            "middle_level_entities": [
+              {"name": "文郎国", "tags": ["ベトナム", "伝説国家"]},
+              {"name": "甌雒国", "tags": ["ベトナム", "初期国家"]},
+              {"name": "南越国", "tags": ["ベトナム", "漢族政権"]},
+              {"name": "交趾郡", "tags": ["ベトナム", "漢支配"]},
+              {"name": "九真郡", "tags": ["ベトナム", "漢支配"]},
+              {"name": "日南郡", "tags": ["ベトナム", "漢支配"]},
+              {"name": "范氏治世（徴氏の乱後）", "tags": ["ベトナム", "地方政権"]},
+              {"name": "二徴夫人政権", "tags": ["ベトナム", "女性支配"]},
+              {"name": "臨邑国", "tags": ["ベトナム中部", "チャム系"]},
+              {"name": "環王", "tags": ["ベトナム中部", "チャンパ前身"]},
+              {"name": "扶南", "tags": ["カンボジア・南ベトナム", "海洋帝国"]},
+              {"name": "陳羅", "tags": ["カンボジア", "扶南後継"]},
+              {"name": "真臘", "tags": ["カンボジア", "陸上クメール"]},
+              {"name": "水真臘", "tags": ["カンボジア", "海上クメール"]},
+              {"name": "陸真臘", "tags": ["カンボジア", "内陸クメール"]},
+              {"name": "占婆", "tags": ["ベトナム中部", "チャンパ"]},
+              {"name": "潘耐", "tags": ["ベトナム中南部", "チャム系小国"]},
+              {"name": "ドヴァーラヴァティ", "tags": ["タイ中部", "モン族"]},
+              {"name": "ハリプンチャイ", "tags": ["タイ北部", "モン族"]},
+              {"name": "羅渇国", "tags": ["タイ中部", "モン・クメール混在"]},
+              {"name": "プヴァラヴァティ", "tags": ["タイ南部", "マレー系"]},
+              {"name": "ピュー都市国家群", "tags": ["ミャンマー中央", "ピュー族"]},
+              {"name": "驃国", "tags": ["ミャンマー", "ピュー最盛期"]},
+              {"name": "モン王国（タトン）", "tags": ["ミャンマー南部・タイ"]},
+              {"name": "シュリクシェトラ", "tags": ["ミャンマー", "ピュー最大都市国家"]},
+              {"name": "漢羅", "tags": ["ミャンマー南部", "モン系小国"]},
+              {"name": "辰国", "tags": ["カンボジア", "前期クメール小国"]},
+              {"name": "閣婆", "tags": ["ベトナム中部", "チャム系小国"]}
+            ]
+          },
+          {
+            "upper_level": "10世紀～15世紀",
+            "middle_level_entities": [
+              {"name": "大瞿越", "tags": ["ベトナム", "初の独立王朝"]},
+              {"name": "大越", "tags": ["ベトナム", "統一国家"]},
+              {"name": "占城", "tags": ["ベトナム中部", "チャンパ最盛期"]},
+              {"name": "クメール帝国", "tags": ["カンボジア", "アンコール時代"]},
+              {"name": "パガン王朝", "tags": ["ミャンマー", "最初の統一王朝"]},
+              {"name": "スコータイ王国", "tags": ["タイ", "最初のタイ族王朝"]},
+              {"name": "ラーンナー王国", "tags": ["タイ北部", "タイ族"]},
+              {"name": "チエンセーン王国", "tags": ["タイ北部", "小王国"]},
+              {"name": "ナーン王国", "tags": ["タイ北部", "小王国"]},
+              {"name": "パヤオ王国", "tags": ["タイ北部", "小王国"]},
+              {"name": "ランサン王国", "tags": ["ラオス", "初の統一国家"]},
+              {"name": "ムアン・スワ", "tags": ["ラオス北部", "前身国家"]},
+              {"name": "モン・モウ王国", "tags": ["ミャンマー北部・タイ"]},
+              {"name": "アーヴァ王国", "tags": ["ミャン�マー", "ビルマ中期"]},
+              {"name": "ピンヤ王国", "tags": ["ミャンマー", "分裂期"]},
+              {"name": "サガイン王国", "tags": ["ミャンマー", "分裂期"]},
+              {"name": "ハンサワディ王国", "tags": ["ミャンマー南部", "モン族"]},
+              {"name": "ラムプリー王国", "tags": ["タイ中部", "スコータイ後継"]},
+              {"name": "アユタヤ王国", "tags": ["タイ", "大帝国時代"]}
+            ]
+          },
+          {
+            "upper_level": "16世紀～1885年（植民地化前）",
+            "middle_level_entities": [
+              {"name": "後黎朝支配下大越", "tags": ["ベトナム", "名目統一"]},
+              {"name": "莫朝", "tags": ["ベトナム北部", "短命王朝"]},
+              {"name": "鄭主政権", "tags": ["ベトナム北部", "実質国家"]},
+              {"name": "阮主政権", "tags": ["ベトナム南部", "実質国家"]},
+              {"name": "西山朝", "tags": ["ベトナム", "農民革命政権"]},
+              {"name": "阮朝", "tags": ["ベトナム", "最後の統一王朝"]},
+              {"name": "トゥングー王朝", "tags": ["ミャンマー", "第二次統一"]},
+              {"name": "コンバウン王朝", "tags": ["ミャンマー", "最後の王朝"]},
+              {"name": "アユタヤ王国（後期）", "tags": ["タイ", "衰退期"]},
+              {"name": "トンブリー王国", "tags": ["タイ", "タクシン時代"]},
+              {"name": "ラタナコーシン王国", "tags": ["タイ", "バンコク時代"]},
+              {"name": "ヴィエンチャン王国", "tags": ["ラオス", "独立期"]},
+              {"name": "ルアンパバーン王国", "tags": ["ラオス北部", "独立"]},
+              {"name": "チャンパサック王国", "tags": ["ラオス南部", "独立"]},
+              {"name": "愛侶王国", "tags": ["カンボジア", "暗黒時代"]},
+              {"name": "カンボジア王国（タイ・ベトナム従属期）", "tags": ["カンボジア", "保護国化前"]}
+            ]
+          },
+          {
+            "upper_level": "植民地時代～現代（1885年～現在）",
+            "middle_level_entities": [
+              {"name": "フランス領コーチシナ", "tags": ["南ベトナム", "直轄植民地"]},
+              {"name": "フランス保護領安南", "tags": ["中部・北部ベトナム"]},
+              {"name": "フランス保護領カンボジア", "tags": ["カンボジア"]},
+              {"name": "フランス保護領ラオス", "tags": ["ラオス"]},
+              {"name": "仏領インドシナ連邦", "tags": ["全体", "1940年代"]},
+              {"name": "英国領ビルマ", "tags": ["ミャンマー", "植民地"]},
+              {"name": "シャム王国", "tags": ["タイ", "独立維持"]},
+              {"name": "日本占領下ビルマ国", "tags": ["ミャンマー", "1943-45"]},
+              {"name": "ベトナム帝国", "tags": ["ベトナム", "1945年3-8月"]},
+              {"name": "ベトナム民主共和国（北ベトナム）", "tags": ["1945-1976"]},
+              {"name": "ベトナム国", "tags": ["南ベトナム", "1949-1955"]},
+              {"name": "ベトナム共和国（南ベトナム）", "tags": ["1955-1975"]},
+              {"name": "南ベトナム共和国臨時革命政府", "tags": ["ベトコン政権", "1969-1976"]},
+              {"name": "ベトナム社会主義共和国", "tags": ["1976年～現在"]},
+              {"name": "クメール共和国", "tags": ["カンボジア", "1970-1975"]},
+              {"name": "民主カンプチア", "tags": ["カンボジア", "ポル・ポト政権"]},
+              {"name": "カンプチア人民共和国", "tags": ["カンボジア", "ベトナム占領期"]},
+              {"name": "カンボジア国", "tags": ["カンボジア", "1993年前"]},
+              {"name": "カンボジア王国（現代）", "tags": ["1993年～現在"]},
+              {"name": "ラオス王国", "tags": ["1946-1975"]},
+              {"name": "ラオス人民民主共和国", "tags": ["1975年～現在"]},
+              {"name": "ビルマ連邦", "tags": ["ミャンマー", "1948-1962"]},
+              {"name": "ビルマ連邦社会主義共和国", "tags": ["ミャンマー", "1962-1988"]},
+              {"name": "ミャンマー連邦", "tags": ["ミャンマー", "1988-2011"]},
+              {"name": "ミャンマー連邦共和国（軍事政権・民政移行期）", "tags": ["2011-2021"]},
+              {"name": "ミャンマー国（2021年軍事政権）", "tags": ["2021年～現在"]},
+              {"name": "タイ王国（立憲君主制）", "tags": ["1932年～現在"]}
+            ]
+          }
+        ]
+      },
+       {
+  "history_structured_list": {
+    "regions": [
+      {
+        "region_id": "V",
+        "region_name": "中央アジア・北アジア（～現在）",
+        "periods": [
+          {
+            "upper_level": "先史～10世紀（遊牧帝国・オアシス国家時代）",
+            "middle_level_entities": [
+              {"name": "匈奴", "tags": ["モンゴル高原", "最初の遊牧帝国"]},
+              {"name": "東胡", "tags": ["満州・モンゴル東部"]},
+              {"name": "丁零", "tags": ["バイカル湖周辺"]},
+              {"name": "大月氏", "tags": ["甘粛～イリ河流域"]},
+              {"name": "小月氏", "tags": ["青海・天山南麓"]},
+              {"name": "烏孫", "tags": ["イリ河流域"]},
+              {"name": "鮮卑", "tags": ["モンゴル東部"]},
+              {"name": "慕容鮮卑", "tags": ["遼西"]},
+              {"name": "拓跋鮮卑", "tags": ["内モンゴル"]},
+              {"name": "柔然", "tags": ["モンゴル高原"]},
+              {"name": "嚈噠（エフタル）", "tags": ["ソグディアナ～ガンダーラ"]},
+              {"name": "突騎施", "tags": ["天山"]},
+              {"name": "東突厥汗国", "tags": ["モンゴル高原"]},
+              {"name": "西突厥汗国", "tags": ["イリ～フェルガナ"]},
+              {"name": "後突厥汗国", "tags": ["8世紀復興"]},
+              {"name": "回鶻汗国", "tags": ["モンゴル高原"]},
+              {"name": "甘州回鶻", "tags": ["甘州"]},
+              {"name": "高昌回鶻", "tags": ["トルファン"]},
+              {"name": "黠戛斯汗国", "tags": ["エニセイ川流域"]},
+              {"name": "ソグド諸都市国家", "tags": ["交易都市群"]},
+              {"name": "康国", "tags": ["サマルカンド"]},
+              {"name": "安国", "tags": ["ブハラ"]},
+              {"name": "石国", "tags": ["タシュケント"]},
+              {"name": "米国", "tags": ["フェルガナ"]},
+              {"name": "曹国", "tags": ["カピサ"]},
+              {"name": "何国", "tags": ["クンドゥズ"]},
+              {"name": "史国", "tags": ["シャフリサブズ"]},
+              {"name": "粟特", "tags": ["パンジケント"]},
+              {"name": "吐火羅（吐火羅斯坦）", "tags": ["バクトリア"]},
+              {"name": "于闐", "tags": ["ホータン"]},
+              {"name": "疏勒", "tags": ["カシュガル"]},
+              {"name": "焉耆", "tags": ["カラシャール"]},
+              {"name": "契丹（遼の前身）", "tags": ["満州・内モンゴル東部"]}
+            ]
+          },
+          {
+            "upper_level": "10世紀～14世紀（イスラム化・モンゴル征服期）",
+            "middle_level_entities": [
+              {"name": "カラハン朝", "tags": ["最初のトルコ・イスラム王朝"]},
+              {"name": "カラキタイ", "tags": ["契丹亡命政権"]},
+              {"name": "ガズナ朝", "tags": ["アフガニスタン～パンジャブ"]},
+              {"name": "大セルジューク朝", "tags": ["イラン～アナトリア"]},
+              {"name": "ホラズム・シャー朝", "tags": ["アムダリヤ～イラン"]},
+              {"name": "キプチャク・ハン国（金帳汗国）", "tags": ["ロシア平原"]},
+              {"name": "イル・ハン国", "tags": ["イラン高原"]},
+              {"name": "チャガタイ・ハン国", "tags": ["中央アジア本体"]},
+              {"name": "白帳汗国", "tags": ["モグーリスタン"]},
+              {"name": "欽察汗国", "tags": ["カザフ草原"]},
+              {"name": "青帳汗国", "tags": ["ホジェンド周辺"]},
+              {"name": "畏兀児斯坦", "tags": ["東トルキスタン"]},
+              {"name": "クングラト部政権", "tags": ["ヒヴァ前身"]},
+              {"name": "庫車汗国", "tags": ["タリム盆地小国"]},
+              {"name": "カラデルヴィッシュ政権", "tags": ["カシュガリア"]},
+              {"name": "葉爾羌汗国", "tags": ["16世紀ヤルカンド"]},
+              {"name": "ティムール朝", "tags": ["サマルカンド帝国"]},
+              {"name": "黒羊朝", "tags": ["アゼルバイジャン"]},
+              {"name": "白羊朝", "tags": ["ディヤルバクル"]}
+            ]
+          },
+          {
+            "upper_level": "15世紀～1876年（ウズベク三汗国・ジュンガル時代）",
+            "middle_level_entities": [
+              {"name": "シャイバニ朝", "tags": ["ブハラ"]},
+              {"name": "ジャーン朝", "tags": ["ヒヴァ"]},
+              {"name": "アストラハン・ハン国", "tags": ["カスピ海北岸"]},
+              {"name": "カザフ・ハン国", "tags": ["大玉茲・中玉茲・小玉茲"]},
+              {"name": "ノガイ・オルダ", "tags": ["カザフ西部"]},
+              {"name": "シビル・ハン国", "tags": ["西シベリア"]},
+              {"name": "カシガリア（ヤクブ・ベク政権）", "tags": ["19世紀東トルキスタン"]},
+              {"name": "ブハラ・ハン国", "tags": ["マンギット朝時代"]},
+              {"name": "ヒヴァ・ハン国", "tags": ["クンギラト朝"]},
+              {"name": "コーカンド・ハン国", "tags": ["フェルガナ"]},
+              {"name": "準噶爾汗国", "tags": ["オイラト最盛期"]},
+              {"name": "和碩特汗国", "tags": ["青海・チベット"]},
+              {"name": "土爾扈特汗国", "tags": ["ヴォルガ～天山"]},
+              {"name": "杜爾伯特汗国", "tags": ["イリ周辺"]},
+              {"name": "ホイト部", "tags": ["オイラト一部"]},
+              {"name": "ハルハ・モンゴル", "tags": ["外モンゴル四部"]},
+              {"name": "オイラト四部連合", "tags": ["準噶爾中心"]},
+              {"name": "カラピルカル諸部", "tags": ["天山北麓キルギス"]},
+              {"name": "ブルト部", "tags": ["イシク湖周辺キルギス"]},
+              {"name": "ヤクート諸部", "tags": ["レナ川流域"]},
+              {"name": "エヴェンキ諸部", "tags": ["シベリア先住"]},
+              {"name": "チュクチ諸部", "tags": ["極東シベリア"]},
+              {"name": "ユカギール諸部", "tags": ["インド川流域"]}
+            ]
+          },
+          {
+            "upper_level": "ロシア・清・ソビエト・現代（1876年～現在）",
+            "middle_level_entities": [
+              {"name": "ロシア領トルキスタン総督府", "tags": ["1876-1917"]},
+              {"name": "ブハラ首長国（ロシア保護国）", "tags": ["～1920"]},
+              {"name": "ヒヴァ・ハン国（ロシア保護国）", "tags": ["～1920"]},
+              {"name": "アラシュ自治政府", "tags": ["1917-1920"]},
+              {"name": "トルキスタン自治ソビエト社会主義共和国", "tags": ["1918-1924"]},
+              {"name": "ブハラ人民ソビエト共和国", "tags": ["1920-1924"]},
+              {"name": "ホレズム人民ソビエト共和国", "tags": ["1920-1924"]},
+              {"name": "トゥヴァ人民共和国", "tags": ["1921-1944"]},
+              {"name": "外モンゴル人民共和国", "tags": ["1924-1992"]},
+              {"name": "南オセチア自治州", "tags": ["グルジア内"]},
+              {"name": "カザフスタン共和国", "tags": ["1991～"]},
+              {"name": "ウズベキスタン共和国", "tags": ["1991～"]},
+              {"name": "トルクメニスタン", "tags": ["1991～"]},
+              {"name": "タジキスタン共和国", "tags": ["1991～"]},
+              {"name": "キルギス共和国", "tags": ["1991～"]},
+              {"name": "モンゴル国", "tags": ["1992～現在"]},
+              {"name": "トゥヴァ共和国", "tags": ["ロシア連邦内"]},
+              {"name": "ヤクート共和国（サハ共和国）", "tags": ["ロシア連邦内"]},
+              {"name": "アルタイ共和国", "tags": ["ロシア連邦内"]},
+              {"name": "ブリヤート共和国", "tags": ["ロシア連邦内"]},
+              {"name": "ハカス共和国", "tags": ["ロシア連邦内"]},
+              {"name": "カラチャイ・チェルケス共和国", "tags": ["北カフカス"]},
+              {"name": "カバルダ・バルカル共和国", "tags": ["北カフカス"]},
+              {"name": "ナゴルノ・カラバフ共和国", "tags": ["未承認国家"]},
+              {"name": "アブハジア共和国", "tags": ["未承認"]},
+              {"name": "南オセチア共和国", "tags": ["未承認"]}
+            ]
+          }
+        ]
+      },
+　　　　{
+  "history_structured_list": {
+    "regions": [
+      {
+        "region_id": "VI",
+        "region_name": "中東・西アジア（狭義：トルコ～イラン～アラビア半島～レバント）",
+        "periods": [
+          {
+            "upper_level": "先古代～紀元前6世紀",
+            "middle_level_entities": [
+              {"name": "シュメール都市国家群", "tags": ["ウルク", "ウル", "ラガシュ", "ウンマ", "キシュ", "ニップル"]},
+              {"name": "アッカド帝国", "tags": ["サルゴン朝"]},
+              {"name": "ウル第三王朝", "tags": ["新シュメール"]},
+              {"name": "イシン・ラルサ時代", "tags": ["アモリ人諸王国"]},
+              {"name": "古バビロニア王国", "tags": ["ハンムラビ朝"]},
+              {"name": "古アッシリア王国", "tags": ["シャムシ・アダド1世"]},
+              {"name": "エブラ王国", "tags": ["シリア"]},
+              {"name": "ヤムハド王国", "tags": ["アレッポ"]},
+              {"name": "マリ王国", "tags": ["ユーフラテス中流"]},
+              {"name": "ヒッタイト古王国", "tags": ["アナトリア"]},
+              {"name": "ヒッタイト新王国", "tags": ["アナトリア帝国"]},
+              {"name": "ミタンニ王国", "tags": ["フルリ人"]},
+              {"name": "カッシート・バビロニア", "tags": ["バビロン"]},
+              {"name": "ウガリット王国", "tags": ["シリア沿岸"]},
+              {"name": "エラム王国", "tags": ["イラン南西部"]},
+              {"name": "マンナエ王国", "tags": ["イラン北西部"]},
+              {"name": "ウラルトゥ王国", "tags": ["アルメニア高原"]},
+              {"name": "中アッシリア王国", "tags": ["ティグラト・ピレセル1世"]},
+              {"name": "新アッシリア帝国", "tags": ["アッシュルバニパルまで"]},
+              {"name": "新バビロニア帝国", "tags": ["ネブカドネザル2世"]},
+              {"name": "メディア王国", "tags": ["イラン高原"]},
+              {"name": "リディア王国", "tags": ["アナトリア西部"]},
+              {"name": "フェニキア都市国家群", "tags": ["ティルス", "シドン", "ビブロス"]},
+              {"name": "イスラエル王国", "tags": ["統一イスラエル"]},
+              {"name": "ユダ王国", "tags": ["南部"]},
+              {"name": "アラム諸王国", "tags": ["ダマスカス", "ハマト", "アラパド"]}
+            ]
+          },
+          {
+            "upper_level": "紀元前6世紀～651年（イスラム征服まで）",
+            "middle_level_entities": [
+              {"name": "アケメネス朝ペルシア", "tags": ["ダレイオス1世～3世"]},
+              {"name": "マケドニア帝国", "tags": ["アレクサンドロス大王"]},
+              {"name": "セレウコス朝シリア", "tags": ["ヘレニズム最大"]},
+              {"name": "プトレマイオス朝エジプト", "tags": ["レバント南部支配"]},
+              {"name": "グレコ・バクトリア王国", "tags": ["バクトリア"]},
+              {"name": "インド・グリーク王国", "tags": ["パキスタン北西部"]},
+              {"name": "アルサケス朝パルティア", "tags": ["ミトリダテス1世～"]},
+              {"name": "アルメニア王国", "tags": ["ティグラネス大王"]},
+              {"name": "ポントス王国", "tags": ["ミトリダテス6世"]},
+              {"name": "アディアベネ王国", "tags": ["アルベラ"]},
+              {"name": "ハトラ王国", "tags": ["アラブ系"]},
+              {"name": "チャラケネ王国", "tags": ["メソポタミア南部"]},
+              {"name": "オシロエネ王国", "tags": ["エデッサ"]},
+              {"name": "ナバテア王国", "tags": ["ペトラ"]},
+              {"name": "キンダ王国", "tags": ["中央アラビア"]},
+              {"name": "ガッサーン朝", "tags": ["ビザンツ属国"]},
+              {"name": "ラフム朝", "tags": ["サーサーン属国"]},
+              {"name": "ササン朝ペルシア", "tags": ["アルダシール1世～ヤズデギルド3世"]},
+              {"name": "ヒムヤル王国", "tags": ["南アラビア"]},
+              {"name": "アクスム王国支配下イエメン", "tags": ["6世紀"]}
+            ]
+          },
+          {
+            "upper_level": "651年～1517年（イスラム帝国時代）",
+            "middle_level_entities": [
+              {"name": "正統カリフ時代", "tags": ["632-661"]},
+              {"name": "ウマイヤ朝", "tags": ["ダマスカス"]},
+              {"name": "アッバース朝", "tags": ["バグダード"]},
+              {"name": "ターヒル朝", "tags": ["ホラサーン"]},
+              {"name": "サッファール朝", "tags": ["シスタン"]},
+              {"name": "サーマーン朝", "tags": ["ブハラ・サマルカンド"]},
+              {"name": "ブワイフ朝", "tags": ["シーア派実権"]},
+              {"name": "ガズナ朝", "tags": ["ガズニー"]},
+              {"name": "大セルジューク朝", "tags": ["トゥグリル・ベク"]},
+              {"name": "ルーム・セルジューク朝", "tags": ["アナトリア"]},
+              {"name": "ホラズム・シャー朝", "tags": ["ウルゲンチ"]},
+              {"name": "ファーティマ朝", "tags": ["カイロ"]},
+              {"name": "アイユーブ朝", "tags": ["サラディン"]},
+              {"name": "マムルーク朝バフリー期", "tags": ["トルコ系奴隷"]},
+              {"name": "マムルーク朝ブルジー期", "tags": ["チェルケス系"]},
+              {"name": "イルデニズ朝", "tags": ["アゼルバイジャン"]},
+              {"name": "ザンギー朝", "tags": ["モスル・アレッポ"]},
+              {"name": "アルトゥク朝", "tags": ["ディヤルバクル"]},
+              {"name": "イルハン朝", "tags": ["フレグ・ウルス"]},
+              {"name": "ムザッファル朝", "tags": ["ファールス"]},
+              {"name": "ジャライル朝", "tags": ["バグダード"]},
+              {"name": "ティムール朝", "tags": ["サマルカンド"]},
+              {"name": "黒羊朝", "tags": ["タブリーズ"]},
+              {"name": "白羊朝", "tags": ["ディヤルバクル"]}
+            ]
+          },
+          {
+            "upper_level": "1517年～1918年（オスマン・サファヴィー・近代化期）",
+            "middle_level_entities": [
+              {"name": "オスマン帝国", "tags": ["イスタンブール"]},
+              {"name": "サファヴィー朝", "tags": ["イスファハン"]},
+              {"name": "アフシャール朝", "tags": ["ナーディル・シャー"]},
+              {"name": "ザンド朝", "tags": ["カリーム・ハーン"]},
+              {"name": "ガージャール朝", "tags": ["テヘラン"]},
+              {"name": "ホターキ朝", "tags": ["カンダハール"]},
+              {"name": "ドゥッラーニー朝", "tags": ["アフガン帝国"]},
+              {"name": "エジプト・マムルーク政権（オスマン名目下）", "tags": ["1517-1798"]},
+              {"name": "ムハンマド・アリー朝エジプト", "tags": ["1805-1952"]},
+              {"name": "バルバリア諸国（アルジェ・チュニス・トリポリ）", "tags": ["オスマン属州"]},
+              {"name": "ワッハーブ派第一サウード王国", "tags": ["1744-1818"]},
+              {"name": "第二サウード王国", "tags": ["1824-1891"]},
+              {"name": "イマーム王国（マスカット）", "tags": ["オマーン"]},
+              {"name": "トラシャル首長国連合", "tags": ["海賊海岸"]},
+              {"name": "バグダード・パシャリク", "tags": ["オスマン実質自治"]},
+              {"name": "レバノン首長国", "tags": ["1840-1861"]},
+              {"name": "ジェッダ・シェリフ政権", "tags": ["ヒジャーズ"]}
+            ]
+          },
+          {
+            "upper_level": "第一次大戦後～1958年（委任統治・初期独立国家）",
+            "middle_level_entities": [
+              {"name": "イギリス委任統治メソポタミア", "tags": ["1920-1932"]},
+              {"name": "イラク王国", "tags": ["1932-1958"]},
+              {"name": "フランス委任統治シリア", "tags": ["1920-1946"]},
+              {"name": "シリア共和国（第一共和国）", "tags": ["1946-1958"]},
+              {"name": "レバノン共和国", "tags": ["1943-"]},
+              {"name": "トランスヨルダン首長国", "tags": ["1921-1946"]},
+              {"name": "ヨルダン・ハシミテ王国", "tags": ["1946-"]},
+              {"name": "イギリス委任統治パレスチナ", "tags": ["1920-1948"]},
+              {"name": "イスラエル国", "tags": ["1948-"]},
+              {"name": "ヒジャーズ王国", "tags": ["1916-1925"]},
+              {"name": "ナジュド及び付属地域スルタン国", "tags": ["1921-1927"]},
+              {"name": "ナジュド・ヒジャーズ王国", "tags": ["1927-1932"]},
+              {"name": "サウジアラビア王国", "tags": ["1932-"]},
+              {"name": "イエメン・ムタワッキル王国", "tags": ["1918-1962"]},
+              {"name": "クウェート首長国（英保護）", "tags": ["～1961"]},
+              {"name": "バーレーン首長国（英保護）", "tags": ["～1971"]},
+              {"name": "カタール首長国（英保護）", "tags": ["～1971"]},
+              {"name": "トラシャル諸首長国（英保護）", "tags": ["～1971"]},
+              {"name": "オマーン・スルタン国", "tags": ["独立国"]},
+              {"name": "パフラヴィー朝イラン", "tags": ["1925-1979"]},
+              {"name": "トルコ共和国", "tags": ["1923-"]},
+              {"name": "アデン保護領", "tags": ["英支配"]},
+              {"name": "南イエメン保護領", "tags": ["英支配"]}
+            ]
+          },
+          {
+            "upper_level": "1958年以降～現在（現代国家）",
+            "middle_level_entities": [
+              {"name": "エジプト＝シリア連合（アラブ連合共和国）", "tags": ["1958-1961"]},
+              {"name": "イラク共和国", "tags": ["1958-"]},
+              {"name": "シリア・アラブ共和国", "tags": ["1961-"]},
+              {"name": "イラン・イスラム共和国", "tags": ["1979-"]},
+              {"name": "イエメン共和国", "tags": ["1990統一-"]},
+              {"name": "北イエメン（イエメン・アラブ共和国）", "tags": ["1962-1990"]},
+              {"name": "南イエメン（人民民主共和国）", "tags": ["1967-1990"]},
+              {"name": "クウェート国", "tags": ["1961-"]},
+              {"name": "アラブ首長国連邦", "tags": ["1971-"]},
+              {"name": "バーレーン王国", "tags": ["1971-"]},
+              {"name": "カタール国", "tags": ["1971-"]},
+              {"name": "オマーン国", "tags": ["1970-"]},
+              {"name": "パレスチナ国（宣言国家）", "tags": ["1988-"]},
+              {"name": "イスラム国（ISIL）", "tags": ["2014-2019実効支配"]},
+              {"name": "ロジャヴァ（北シリア民主連邦）", "tags": ["2016-実効自治"]}
+            ]
+          }
+        ]
+      }, 
+       {
+  "history_structured_list": {
+    "regions": [
+      {
+        "region_id": "VII",
+        "region_name": "東欧・バルカン・バルト（ロシア・ウクライナ・ベラルーシ含む）",
+        "periods": [
+          {
+            "upper_level": "先古代〜10世紀（古代・初期スラブ・バルト時代）",
+            "middle_level_entities": [
+              {"name": "トラキア王国", "tags": ["バルカン南部"]},
+              {"name": "オドリュサイ王国", "tags": ["トラキア最強"]},
+              {"name": "ダキア王国", "tags": ["ブレビスタ〜デケバルス"]},
+              {"name": "イリュリア諸王国", "tags": ["アルバニア・ダルマチア"]},
+              {"name": "マケドニア王国（古代）", "tags": ["フィリッポス2世〜アレクサンドロス"]},
+              {"name": "エピロス王国", "tags": ["ピュロス王"]},
+              {"name": "スキタイ支配下ポントス草原", "tags": ["黒海北岸"]},
+              {"name": "ボスポラス王国", "tags": ["クリミア・ギリシア植民市"]},
+              {"name": "古プルーセン人部族", "tags": ["バルト東部"]},
+              {"name": "古リトアニア人部族", "tags": ["アウクシュタイタイ・ジャマイタイ"]},
+              {"name": "古ラトビア人部族", "tags": ["クルシェ・ゼムガレ・ラトガレ"]},
+              {"name": "フィン諸部族（エスト人・リーヴ人）", "tags": ["エストニア"]},
+              {"name": "東スラブ部族連合", "tags": ["ポリャーネ・ドレヴリャーネ・セヴェリャーネ"]},
+              {"name": "ヴェレティ・ヴャチチ・ラジミチ", "tags": ["東スラブ"]},
+              {"name": "ノヴゴロド・スラヴ人", "tags": ["イリメン湖"]},
+              {"name": "クリヴィチ族", "tags": ["スモレンスク・ポロツク"]},
+              {"name": "ヴァリャーグ支配下キエフ", "tags": ["リューリク朝初期"]}
+            ]
+          },
+          {
+            "upper_level": "10世紀〜14世紀（中世王国・公国時代）",
+            "middle_level_entities": [
+              {"name": "キエフ・ルーシ", "tags": ["988-1132 最盛期"]},
+              {"name": "ノヴゴロド共和国", "tags": ["1136-1478 実質独立"]},
+              {"name": "ポロツク公国", "tags": ["バルト東部"]},
+              {"name": "チェルニゴフ公国", "tags": ["ウクライナ北部"]},
+              {"name": "ペレヤスラヴリ公国", "tags": ["キエフ近郊"]},
+              {"name": "ヴォルィーニ公国", "tags": ["西ウクライナ"]},
+              {"name": "ガリツィア公国", "tags": ["1253年王国"]},
+              {"name": "ガリツィア＝ヴォルィーニ王国", "tags": ["1245-1349"]},
+              {"name": "ウラジーミル＝スーズダリ大公国", "tags": ["北東ルーシ中心"]},
+              {"name": "トヴェリ大公国", "tags": ["モスクワと対抗"]},
+              {"name": "モスクワ大公国", "tags": ["1263-1547"]},
+              {"name": "リャザン公国", "tags": ["オカ川流域"]},
+              {"name": "スモレンスク公国", "tags": ["西ロシア"]},
+              {"name": "第一次ブルガリア帝国", "tags": ["681-1018"]},
+              {"name": "第二次ブルガリア帝国", "tags": ["1185-1396"]},
+              {"name": "セルビア大公国", "tags": ["ステファン・ネマニャ"]},
+              {"name": "ドゥシャン帝国（セルビア帝国）", "tags": ["1346-1371 最盛期"]},
+              {"name": "ボスニア王国", "tags": ["1377-1463"]},
+              {"name": "クロアチア王国", "tags": ["925-1102"]},
+              {"name": "ハンガリー王国（アルパード朝）", "tags": ["1000-1301"]},
+              {"name": "ポーランド王国（ピャスト朝）", "tags": ["960-1370"]},
+              {"name": "大モラヴィア", "tags": ["833-907"]},
+              {"name": "チェコ公国", "tags": ["プレミスル朝"]},
+              {"name": "ポーランド王国（ヤギェウォ朝）", "tags": ["1386-1572"]},
+              {"name": "リトアニア大公国", "tags": ["1236-1430 最盛期"]},
+              {"name": "サモギティア公国", "tags": ["リトアニア内"]},
+              {"name": "ポドラシア・ヤトヴャギア", "tags": ["バルト部族"]},
+              {"name": "プロイセン騎士団国", "tags": ["1226-1525"]},
+              {"name": "リヴォニア騎士団", "tags": ["1237-1561"]},
+              {"name": "金帳汗国（ジョチ・ウルス）", "tags": ["1242-1502"]},
+              {"name": "ハンガリー王国（アンジュー朝以降）", "tags": ["1308-1526"]},
+              {"name": "ワラキア公国", "tags": ["1310-1859"]},
+              {"name": "モルダヴィア公国", "tags": ["1359-1859"]},
+              {"name": "トランシルヴァニア公国", "tags": ["中世〜1711"]}
+            ]
+          },
+          {
+            "upper_level": "15世紀〜1918年（近世〜帝国時代）",
+            "middle_level_entities": [
+              {"name": "ポーランド・リトアニア共和国", "tags": ["1569-1795 黄金時代"]},
+              {"name": "モスクワ・ツァーリ国", "tags": ["1547-1721"]},
+              {"name": "ロシア帝国", "tags": ["1721-1917"]},
+              {"name": "オスマン帝国バルカン支配", "tags": ["1389-1912"]},
+              {"name": "セルビア専制公国", "tags": ["1459-1804 オスマン下自治"]},
+              {"name": "モンテネグロ司教領", "tags": ["1516-1852 実質独立"]},
+              {"name": "ラグーザ共和国（ドゥブロヴニク）", "tags": ["1358-1808"]},
+              {"name": "ハプスブルク領ハンガリー王国", "tags": ["1526-1867"]},
+              {"name": "オーストリア＝ハンガリー帝国", "tags": ["1867-1918"]},
+              {"name": "トランシルヴァニア公国（ハプスブルク下）", "tags": ["1699-1867"]},
+              {"name": "ブコヴィナ公国", "tags": ["1775-1918"]},
+              {"name": "クラクフ共和国", "tags": ["1815-1846 自由市"]},
+              {"name": "ポーランド立憲王国（ロシア属国）", "tags": ["1815-1867"]},
+              {"name": "フィンランド大公国（ロシア属国）", "tags": ["1809-1917"]},
+              {"name": "リヴォニア総督府", "tags": ["ロシア帝国バルト支配"]},
+              {"name": "エストラント・クルランド・リーフラント", "tags": ["バルト貴族自治"]},
+              {"name": "クリミア・ハン国", "tags": ["1441-1783"]},
+              {"name": "カザン・ハン国", "tags": ["1438-1552"]},
+              {"name": "アストラハン・ハン国", "tags": ["1466-1556"]},
+              {"name": "ノガイ・オルダ", "tags": ["15-17世紀"]},
+              {"name": "チェルケス諸公国", "tags": ["カバルダなど"]},
+              {"name": "ポーランド分割後の三分割地域", "tags": ["1795-1918 ロシア・プロイセン・オーストリア支配"]},
+              {"name": "ベッサラビア総督府", "tags": ["1812-1918 ロシア支配モルダヴィア東部"]}
+            ]
+          },
+          {
+            "upper_level": "1918〜1990年（戦間期・第二次大戦後〜ソ連時代）",
+            "middle_level_entities": [
+              {"name": "ポーランド第二共和国", "tags": ["1918-1939"]},
+              {"name": "リトアニア共和国（1918年）", "tags": ["1918-1940"]},
+              {"name": "ラトビア共和国", "tags": ["1918-1940"]},
+              {"name": "エストニア共和国", "tags": ["1918-1940"]},
+              {"name": "フィンランド共和国", "tags": ["1917-"]},
+              {"name": "ベラルーシ人民共和国", "tags": ["1918 短命"]},
+              {"name": "ウクライナ人民共和国", "tags": ["1917-1921"]},
+              {"name": "ウクライナ国（ヘーチマン国家）", "tags": ["1918 スコロパードシクィイ"]},
+              {"name": "西ウクライナ人民共和国", "tags": ["1918-1919"]},
+              {"name": "ユーゴスラビア王国", "tags": ["1918-1941"]},
+              {"name": "ブルガリア王国", "tags": ["1908-1946"]},
+              {"name": "ルーマニア王国", "tags": ["1881-1947"]},
+              {"name": "アルバニア王国", "tags": ["1928-1939"]},
+              {"name": "ハンガリー王国（摂政時代）", "tags": ["1920-1946"]},
+              {"name": "ソビエト連邦", "tags": ["1922-1991"]},
+              {"name": "ウクライナSSR", "tags": ["1919-1991"]},
+              {"name": "ベラルーシSSR", "tags": ["1919-1991"]},
+              {"name": "リトアニアSSR", "tags": ["1940-1990"]},
+              {"name": "ラトビアSSR", "tags": ["1940-1990"]},
+              {"name": "エストニアSSR", "tags": ["1940-1990"]},
+              {"name": "モルダビアSSR", "tags": ["1940-1991"]},
+              {"name": "ユーゴスラビア社会主義連邦共和国", "tags": ["1945-1992"]},
+              {"name": "クロアチア独立国", "tags": ["1941-1945 枢軸傀儡"]},
+              {"name": "セルビア救国政府", "tags": ["1941-1944 ドイツ傀儡"]},
+              {"name": "モンテネグロ王国（イタリア傀儡）", "tags": ["1941-1944"]}
+            ]
+          },
+          {
+            "upper_level": "1991年以降〜現在（現代国家）",
+            "middle_level_entities": [
+              {"name": "ロシア連邦", "tags": ["1991-"]},
+              {"name": "ウクライナ", "tags": ["1991-"]},
+              {"name": "ベラルーシ", "tags": ["1991-"]},
+              {"name": "リトアニア共和国", "tags": ["1990再独立-"]},
+              {"name": "ラトビア共和国", "tags": ["1991再独立-"]},
+              {"name": "エストニア共和国", "tags": ["1991再独立-"]},
+              {"name": "ポーランド共和国", "tags": ["1989第三共和国-"]},
+              {"name": "チェコ共和国", "tags": ["1993-"]},
+              {"name": "スロバキア共和国", "tags": ["1993-"]},
+              {"name": "ハンガリー", "tags": ["1989第三共和国-"]},
+              {"name": "ルーマニア", "tags": ["1989-"]},
+              {"name": "ブルガリア共和国", "tags": ["1990-"]},
+              {"name": "セルビア共和国", "tags": ["2006-"]},
+              {"name": "クロアチア共和国", "tags": ["1991-"]},
+              {"name": "スロベニア共和国", "tags": ["1991-"]},
+              {"name": "北マケドニア共和国", "tags": ["1991-"]},
+              {"name": "ボスニア・ヘルツェゴビナ", "tags": ["1992-"]},
+              {"name": "モンテネグロ", "tags": ["2006-"]},
+              {"name": "コソボ共和国", "tags": ["2008独立宣言、一部未承認"]},
+              {"name": "沿ドニエストル共和国", "tags": ["1990未承認"]},
+              {"name": "ルガンスク人民共和国", "tags": ["2014未承認"]},
+              {"name": "ドネツク人民共和国", "tags": ["2014未承認"]},
+              {"name": "クリミア共和国（ロシア編入後）", "tags": ["2014-"]},
+              {"name": "セヴァストポリ連邦市", "tags": ["2014-"]},
+              {"name": "アブハジア共和国", "tags": ["未承認、グルジア領主張"]},
+              {"name": "南オセチア共和国", "tags": ["未承認、グルジア領主張"]}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
