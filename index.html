@@ -201,7 +201,7 @@
             color: #333;
             text-decoration: underline;
         }
-        
+
         /* --- タグのスタイル（新規追加） --- */
         .entity-tag {
             background-color: #007bff;
@@ -212,6 +212,71 @@
             font-weight: 700;
             margin-left: 4px;
             white-space: nowrap; /* 折り返しを防ぐ */
+            cursor: pointer; /* クリック可能であることを示す */
+        }
+
+        .entity-tag:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- タグ表示のON/OFF切り替え用コンテナ --- */
+        #tag-toggle-container {
+            margin-top: 15px;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* --- トグルスイッチのCSS (シンプルなスタイル) --- */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px #28a745;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
         }
     </style>
 </head>
@@ -224,6 +289,14 @@
     <div id="controls-container">
         <input type="text" id="search-input" placeholder="エンティティ名やタグを検索...">
         <button id="search-button">検索開始</button>
+        
+        <div id="tag-toggle-container">
+            <span>タグ表示:</span>
+            <label class="switch">
+                <input type="checkbox" id="tag-toggle-switch" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
     </div>
 
     <div id="download-container"></div>
@@ -241,6 +314,7 @@
         const downloadContainer = document.getElementById('download-container');
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
+        const tagToggleSwitch = document.getElementById('tag-toggle-switch'); // 💡 トグルスイッチ要素
 
         let integratedDataCache = null;
 
@@ -261,6 +335,18 @@
                 performLocalSearch();
             }
         });
+        
+        // 💡 タグトグルスイッチのリスナー
+        tagToggleSwitch.addEventListener('change', function() {
+            // 表示を切り替えるために、現在のデータを再描画する
+            if (integratedDataCache) {
+                // 現在の検索クエリを再利用してフィルタリングを維持しつつ再描画
+                const currentQuery = searchInput.value.trim();
+                const filteredData = filterData(integratedDataCache, currentQuery); 
+                displayData(filteredData);
+            }
+        });
+
 
         // --- フィルタリング機能 (強化版) ---
         function performLocalSearch() {
@@ -284,7 +370,6 @@
             const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/g, '').trim();
 
             // 3. Wikipedia検索に使用するキーワードを決定
-            // 括弧の外側を優先し、括弧内の情報は補助的に使用
             let finalSearchQuery;
             if (outsideParentheses) {
                 finalSearchQuery = outsideParentheses;
@@ -310,7 +395,7 @@
             searchButton.onclick = () => window.open(wikipediaSearchUrl, '_blank');
         }
 
-        // --- データをフィルタリングする関数 (タグ検索を追加) ---
+        // --- データをフィルタリングする関数 (タグ検索を含む) ---
         function filterData(data, query) {
             if (!query) return data;
 
@@ -326,13 +411,13 @@
                         // 1. エンティティ名全体でのマッチング
                         const originalEntityLower = entityName.toLowerCase();
 
-                        // 2. 括弧内の文字列を抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "東チャガタイ"）
+                        // 2. 括弧内の文字列を抽出
                         const match = entityName.match(/[（\(](.+?)[）\)]/);
                         const insideParentheses = match ? match[1].toLowerCase() : '';
 
-                        // 3. 括弧の外側の文字列のみを抽出（例: "モグーリスタン・ハン国 (東チャガタイ)" -> "モグーリスタン・ハン国"）
+                        // 3. 括弧の外側の文字列のみを抽出
                         const outsideParentheses = entityName.replace(/[（\(].+?[）\)]/g, '').trim().toLowerCase();
-                        
+
                         // 4. タグの中身のいずれかに一致するか
                         const tagMatch = entityTags.some(tag => tag.toLowerCase().includes(lowerCaseQuery));
 
@@ -340,7 +425,7 @@
                         return originalEntityLower.includes(lowerCaseQuery) ||
                                insideParentheses.includes(lowerCaseQuery) ||
                                outsideParentheses.includes(lowerCaseQuery) ||
-                               tagMatch; // 💡 タグによる検索を追加
+                               tagMatch; 
                     });
 
                     return filteredEntities.length > 0 ? { ...period, middle_level_entities: filteredEntities } : null;
@@ -382,13 +467,13 @@
             let integratedRegions = [];
 
             try {
+                // ... (JSON統合処理は変更なし) ...
                 for (let i = 1; i <= totalFiles; i++) {
                     const fileName = `${fileBaseName}${i}${fileExtension}`;
                     const url = basePath + fileName; 
 
                     const response = await fetch(url);
                     if (!response.ok) {
-                        // 🚨 ネットワーク/ファイル存在エラーを明確化
                         throw new Error(`🚨 ネットワーク/ファイル存在エラー: ${url}が見つからないか、読み込み失敗 (Status: ${response.status})。`);
                     }
 
@@ -399,17 +484,14 @@
                         const trimmedText = text.trim();
 
                         if (trimmedText === '') {
-                            // ❌ 空ファイルのエラーを明確化
                             throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」の内容が空文字列、または空白文字のみでした。`);
                         }
 
                         jsonContent = JSON.parse(trimmedText);
                     } catch (e) {
-                        // ❌ JSONパースエラー時に詳細デバッグ情報をコンソールに出力
                         const snippet = text.substring(0, 200) + (text.length > 200 ? '...' : '');
                         console.error(`デバッグ情報 - ファイル: ${fileName}`, `エラー: ${e.message}`, `内容の先頭スニペット: ${snippet}`);
 
-                        // ユーザーへの表示をより詳細にする
                         throw new Error(`❌ JSON構文エラー: ファイル「${fileName}」でパース失敗。詳細: ${e.message}。コンソールで内容の先頭200文字を確認してください。`);
                     }
 
@@ -433,10 +515,13 @@
             }
         }
 
-        // --- データの表示 (タグ表示を追加) ---
+        // --- データの表示 (タグ表示とタグのWikiリンク処理を追加) ---
         function displayData(integratedData) {
             container.innerHTML = ''; 
             const regions = integratedData.history_structured_list.regions;
+            
+            // 💡 トグルスイッチの状態を取得
+            const tagsVisible = tagToggleSwitch.checked;
 
             regions.forEach(region => {
                 const regionCard = document.createElement('div');
@@ -461,7 +546,7 @@
 
                     period.middle_level_entities.forEach(entity => {
                         const listItem = document.createElement('li');
-                        
+
                         const entityName = entity.name || '';
                         const entityTags = entity.tags || [];
 
@@ -479,16 +564,27 @@
                         link.target = '_blank'; 
 
                         listItem.appendChild(link);
-                        
-                        // 💡 tagsの表示 (新規追加)
-                        entityTags.forEach(tag => {
-                            const tagSpan = document.createElement('span');
-                            tagSpan.className = 'entity-tag';
-                            tagSpan.textContent = tag;
-                            listItem.appendChild(tagSpan);
-                        });
 
-                        entitiesList.appendChild(listItem);
+                        // 💡 tagsの表示 (ON/OFF切り替えとWikiリンクを追加)
+                        if (tagsVisible) {
+                            entityTags.forEach(tag => {
+                                const tagSpan = document.createElement('span');
+                                tagSpan.className = 'entity-tag';
+                                tagSpan.textContent = tag;
+                                
+                                // 💡 タグをクリックした際のWiki検索処理
+                                tagSpan.addEventListener('click', function(event) {
+                                    // 親要素のリンク動作を阻止しないように注意 (ここではa要素自体がタグに含まれないため不要だが、念のため)
+                                    event.stopPropagation(); 
+                                    const tagSearchUrl = `https://ja.wikipedia.org/w/index.php?search=${encodeURIComponent(tag)}&go=Go`;
+                                    window.open(tagSearchUrl, '_blank');
+                                });
+                                
+                                listItem.appendChild(tagSpan);
+                            });
+                        }
+
+                    entitiesList.appendChild(listItem);
                     });
 
                     periodSection.appendChild(entitiesList);
