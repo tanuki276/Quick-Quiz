@@ -111,7 +111,7 @@
       },
       {
         "region_id": "IX",
-        "region_name": "東南アジア島嶼部・マレー半島（超詳細版）",
+        "region_name": "東南アジア島嶼部・マレー半島",
         "periods": [
           {
             "upper_level": "先史〜14世紀（古代海洋王国期）",
@@ -407,12 +407,9 @@
           }
         ]
       },
-       {
-  "history_structured_list": {
-    "regions": [
       {
         "region_id": "XII",
-        "region_name": "太平洋諸島（ポリネシア・メラネシア・ミクロネシア全域・極限詳細版）",
+        "region_name": "太平洋諸島（ポリネシア・メラネシア・ミクロネシア全域",
         "periods": [
           {
             "upper_level": "先史〜18世紀（伝統王国・首席制時代）",
