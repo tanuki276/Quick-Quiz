@@ -874,7 +874,7 @@
           }
         ]
       }
-    ] // regions配列の閉じ
-  } // history_structured_listオブジェクトの閉じ
-} // 全体オブジェクトの閉じ
+    ]
+  }
+}
 
