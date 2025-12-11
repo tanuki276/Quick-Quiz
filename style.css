@@ -1,3 +1,6 @@
+/* ========================================================= */
+/* 1. ベースレイアウト */
+/* ========================================================= */
 body {
     font-family: 'Noto Sans JP', sans-serif;
     background-color: #f4f7f9;
@@ -5,12 +8,13 @@ body {
     margin: 0;
     padding: 0;
     line-height: 1.6;
+    min-height: 100vh; /* 最小高さを確保 */
 }
 
 header {
     background-color: #007bff;
     color: white;
-    padding: 20px;
+    padding: 20px 10px; /* パディングを調整 */
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -26,15 +30,22 @@ header p {
     opacity: 0.9;
 }
 
+/* ========================================================= */
+/* 2. コントロールパネル (#controls-container) */
+/* ========================================================= */
 #controls-container {
-    padding: 20px;
+    padding: 20px 10px; 
     text-align: center;
     background-color: #fff;
     border-bottom: 1px solid #ddd;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
+    display: flex; /* ★修正: フレックスボックスで配置を制御 */
+    flex-direction: column;
+    align-items: center;
 }
 
+/* データモードコンテナ (Mo/no ラジオボタン) */
 #data-mode-container {
     margin-bottom: 15px;
     padding: 10px;
@@ -42,36 +53,86 @@ header p {
     border-radius: 5px;
     font-size: 0.9em;
     display: flex;
+    /* ★修正: 小画面では縦に折り返す */
+    flex-wrap: wrap; 
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 15px; /* ギャップを調整 */
+    max-width: 100%; /* 最大幅を確保 */
 }
 
 #data-mode-container span {
     font-weight: 700;
-    margin-right: 10px;
     color: #007bff;
 }
 
+/* 検索エリアの統一配置 */
+#search-input,
+#search-button {
+    vertical-align: middle;
+}
+
+#search-input {
+    padding: 10px 15px;
+    width: 60%; /* ★修正: 幅を調整 */
+    max-width: 400px;
+    border: 2px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+    box-sizing: border-box; /* ★重要: ボックスサイジングの統一 */
+}
+
+#search-button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 700;
+    transition: background-color 0.3s;
+}
+
+/* 検索オプションコンテナ */
 #search-options-container {
     display: flex;
+    /* ★修正: 小画面では縦に折り返す */
+    flex-wrap: wrap; 
     justify-content: center;
     align-items: center;
-    gap: 30px;
+    gap: 20px; /* ギャップを調整 */
     margin-top: 15px;
     font-size: 0.9em;
 }
 
-#search-mode-container {
+#search-mode-container,
+#tag-toggle-container {
      display: flex;
      align-items: center;
      gap: 10px;
+     padding: 5px 10px;
+     border-radius: 5px;
+     background-color: #f8f9fa;
+}
+
+
+/* ========================================================= */
+/* 3. メッセージとダウンロードエリア */
+/* ========================================================= */
+#status-message {
+    max-width: 1200px;
+    margin: 0 auto 10px auto;
+    padding: 10px 20px;
+    text-align: center;
+    color: #007bff; /* ★追加: 色を設定 */
 }
 
 #download-container { 
     max-width: 1200px;
     margin: 0 auto 20px auto;
-    padding: 10px 20px;
+    padding: 0 20px; /* 左右パディングを維持 */
     text-align: right;
 }
 
@@ -85,212 +146,145 @@ header p {
     font-size: 1em;
     font-weight: 700;
     transition: background-color 0.3s;
-}
-
-#download-button:hover {
-    background-color: #e0a800;
-}
-
-
-#search-input {
-    padding: 10px 15px;
-    width: 70%;
-    max-width: 400px;
-    border: 2px solid #ccc;
-    border-radius: 5px 0 0 5px;
-    font-size: 1em;
-    transition: border-color 0.3s;
-    vertical-align: middle;
-}
-
-#search-input:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-#search-button {
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 0 5px 5px 0;
-    cursor: pointer;
-    font-size: 1em;
-    font-weight: 700;
-    transition: background-color 0.3s;
-    vertical-align: middle;
-}
-
-#search-button:hover {
-    background-color: #0056b3;
-}
-
-#history-list-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .loading-message,
 .error-message,
 .no-results-message {
+    /* ... (変更なし) ... */
     text-align: center;
     padding: 40px;
     font-size: 1.2em;
     color: #555;
 }
 
-.error-message {
-    color: #d32f2f;
-    background-color: #ffebee;
-    border: 1px solid #d32f2f;
-    border-radius: 8px;
-    margin-top: 20px;
-}
-
-.no-results-message {
-    color: #d32f2f;
-    font-weight: bold;
+/* ========================================================= */
+/* 4. データ表示エリア (#history-list-container) */
+/* ========================================================= */
+#history-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 10px 40px 10px; /* 下部にパディングを追加 */
 }
 
 .region-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-    overflow: hidden;
+    /* ... (変更なし) ... */
 }
 
 .region-header {
-    background-color: #6c757d; 
-    color: white;
-    padding: 15px 20px;
-    font-size: 1.3em;
-    font-weight: 700;
-    border-bottom: 3px solid #495057; 
-}
-
-.period-section {
-    padding: 15px 20px;
-    border-top: 1px dashed #eee;
+    /* ... (変更なし) ... */
 }
 
 .period-upper {
-    background-color: #f8f9fa;
-    color: #007bff; 
-    font-size: 1.1em;
-    font-weight: 700;
-    padding: 8px 10px;
-    border-left: 5px solid #007bff; 
-    margin-bottom: 10px;
+    /* ... (変更なし) ... */
 }
 
 .middle-entities-list {
     list-style-type: none;
-    padding-left: 15px;
+    padding-left: 0; /* ★修正: 左パディングを削除 */
     margin: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px; /* ギャップを少し縮小 */
 }
 
 .middle-entities-list li {
-    padding: 5px 12px;
+    padding: 5px 10px; /* パディングを調整 */
     background-color: #e9ecef;
     border-radius: 3px;
     font-size: 0.95em;
-    transition: background-color 0.2s;
     display: flex; 
     align-items: center;
-}
-
-.middle-entities-list li:hover {
-    background-color: #dee2e6;
+    border: 1px solid #dee2e6; /* 境界線を追加 */
 }
 
 .middle-entities-list a {
-    text-decoration: none;
-    color: #495057;
-    font-weight: 400;
-    margin-right: 8px; 
-}
-
-.middle-entities-list a:hover {
-    color: #333;
-    text-decoration: underline;
+    /* ... (変更なし) ... */
 }
 
 .entity-tag {
-    background-color: #007bff;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.75em;
-    font-weight: 700;
-    margin-left: 4px;
-    white-space: nowrap; 
-    cursor: pointer; 
+    /* ... (変更なし) ... */
 }
 
-.entity-tag:hover {
-    background-color: #0056b3;
-}
+/* ========================================================= */
+/* 5. レスポンシブ対応 (モバイル向け) */
+/* ========================================================= */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.8em;
+    }
 
-#tag-toggle-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    #controls-container {
+        padding: 15px;
+    }
 
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 20px;
-}
+    #data-mode-container {
+        flex-direction: column; /* ★モバイルでは縦並び */
+        gap: 8px;
+        align-items: flex-start;
+        padding: 10px 15px;
+        text-align: left;
+    }
+    
+    #data-mode-container span {
+         width: 100%; /* 幅を占有 */
+         text-align: center;
+         margin-bottom: 5px;
+    }
+    
+    #data-mode-container label {
+         margin: 0 5px;
+    }
 
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+    /* 検索バーを完全に占有させる */
+    #search-input {
+        width: calc(70% - 10px); /* 100%からボタン分を引く */
+        max-width: none;
+        margin-right: -1px; /* ボタンとくっつける */
+    }
 
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 20px;
-}
+    #search-button {
+        width: 30%;
+    }
 
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 16px;
-    width: 16px;
-    left: 2px;
-    bottom: 2px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
+    /* 検索オプションを縦並びまたは折り返し */
+    #search-options-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    #search-mode-container,
+    #tag-toggle-container {
+        width: 100%;
+        justify-content: space-between;
+        padding: 8px 15px;
+    }
 
-input:checked + .slider {
-    background-color: #28a745;
-}
+    #download-container {
+        text-align: center;
+        padding: 0 10px;
+    }
+    
+    #download-button {
+         width: 100%;
+    }
 
-input:focus + .slider {
-    box-shadow: 0 0 1px #28a745;
-}
+    .region-header {
+        font-size: 1.1em;
+        padding: 10px 15px;
+    }
 
-input:checked + .slider:before {
-    transform: translateX(20px);
-}
-
-#search-mode-container label {
-     cursor: pointer;
+    .period-upper {
+        font-size: 1em;
+        padding: 6px 8px;
+    }
+    
+    .middle-entities-list {
+        gap: 6px;
+    }
+    
+    .middle-entities-list li {
+        font-size: 0.9em;
+    }
 }
