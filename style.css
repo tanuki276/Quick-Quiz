@@ -35,6 +35,24 @@ header p {
     margin-bottom: 20px;
 }
 
+#data-mode-container {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    font-size: 0.9em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+#data-mode-container span {
+    font-weight: 700;
+    margin-right: 10px;
+    color: #007bff;
+}
+
 #search-options-container {
     display: flex;
     justify-content: center;
