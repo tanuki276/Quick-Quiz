@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>liefantidia3</title>
+    <title>liefantidia 3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -17,31 +17,31 @@
 
     <div id="controls-container">
         <div id="data-mode-container">
-            <span>データモード:</span>
+            <span>モード切り替え:</span>
             <label>
-                <input type="radio" name="data-mode" value="mo" id="data-mode-mo" checked> 都道府県等
+                <input type="radio" name="data-mode" value="mo" id="data-mode-mo"> 歴史上の日本の都道府県等
             </label>
             <label>
-                <input type="radio" name="data-mode" value="no" id="data-mode-no"> 歴史上の国等
+                <input type="radio" name="data-mode" value="no" id="data-mode-no" checked> 歴史上の国等
             </label>
         </div>
 
-        <input type="text" id="search-input" placeholder="検索">
+        <input type="text" id="search-input" placeholder="検索キーワード ">
         <button id="search-button">検索開始</button>
 
         <div id="search-options-container">
             <div id="search-mode-container">
                 <span>検索モード:</span>
                 <label>
-                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND
+                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND 
                 </label>
                 <label>
-                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR 
+                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR  
                 </label>
             </div>
 
             <div id="tag-toggle-container">
-                <span>情報表示:</span>
+                <span>タグ表示:</span>
                 <label class="switch">
                     <input type="checkbox" id="tag-toggle-switch" checked>
                     <span class="slider"></span>
@@ -49,8 +49,10 @@
             </div>
         </div>
     </div>
+    
+    <div id="status-message" style="margin-top: 10px; font-weight: bold;"></div>
 
-    <div id="download-container"></div>
+    <div id="download-container" style="margin-top: 10px;"></div>
 
     <div id="history-list-container">
         <div class="loading-message">データをロード中... しばらくお待ちください</div>
