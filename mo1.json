@@ -49,8 +49,8 @@
     {"name": "鹿児島県", "capital": "鹿児島市"},
     {"name": "沖縄県", "capital": "那覇市"}
   ]
-}
-{
+},
+ {
   "category_name": "構想中の行政区画",
   "list": [
     {"name": "北海道州", "composition": "北海道"},
@@ -90,8 +90,8 @@
     {"name": "奄美県", "composition": "奄美群島"},
     {"name": "対馬県", "composition": "対馬島"}
   ]
-}
-{
+},
+ {
   "category_name": "消えた都道府県",
   "list": [
     {"name": "若松県", "composition": "福島県会津地方, 新潟県の一部"},
@@ -218,8 +218,8 @@
     {"name": "額田県（愛知）", "composition": "愛知県の一部"},
     {"name": "名古屋県", "composition": "愛知県 名古屋周辺"}
   ]
-}
-{
+},
+ {
   "category_name": "藩",
   "list": [
     {"name": "会津藩", "composition": "福島県会津地方"},
@@ -442,8 +442,8 @@
     {"name": "竜崎新田藩", "composition": "常陸国の一部"},
     {"name": "龍岡新田藩", "composition": "信濃国の一部"}
   ]
-}
-{
+},
+ {
   "category_name": "律令国",
   "list": [
     {"name": "蝦夷", "composition": "北海道"},
@@ -510,8 +510,8 @@
     {"name": "薩摩", "composition": "鹿児島県（西部）"},
     {"name": "琉球", "composition": "沖縄県"}
   ]
-}
-{
+},
+ {
   "category_name": "廃藩置県と旧初期・短命府県",
   "list": [
     {"name": "東京府", "composition": "東京都"},
