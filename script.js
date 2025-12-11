@@ -1,16 +1,24 @@
+// --- グローバル定数と変数の設定 ---
 const container = document.getElementById('history-list-container');
 const downloadContainer = document.getElementById('download-container');
 const searchInput = document.getElementById('search-input');
 const searchButton = document.getElementById('search-button');
 const tagToggleSwitch = document.getElementById('tag-toggle-switch'); 
 const searchModeRadios = document.querySelectorAll('input[name="search-mode"]');
+// ★追加: データソース切り替えのためのUI要素
+const switchDataBtn = document.getElementById('switch-data-btn'); 
+const statusMessage = document.getElementById('status-message'); 
 
-let integratedDataCache = null;
+let integratedDataCache = null; // 統合された全データ（フィルター前）
 
-const totalFiles = 1; 
-const fileBaseName = 'mo'; 
+// ★修正: const から let に変更し、no系をデフォルトに設定
+let currentTotalFiles = 9; 
+let currentFileBaseName = 'no'; 
 const fileExtension = '.json';
 const basePath = './'; 
+
+
+// --- イベントリスナーの設定 ---
 
 searchButton.addEventListener('click', function() {
     performLocalSearch();
@@ -32,11 +40,153 @@ searchModeRadios.forEach(radio => {
     });
 });
 
+// ★追加: データソース切り替えイベントリスナー
+if (switchDataBtn) {
+    switchDataBtn.addEventListener('click', function() {
+        if (currentFileBaseName === 'no') {
+            // 'no' 系 -> 'mo' 系 (1ファイル) に切り替え
+            setFileConfiguration('mo', 1);
+        } else {
+            // 'mo' 系 -> 'no' 系 (9ファイル) に切り替え
+            setFileConfiguration('no', 9);
+        }
+    });
+}
+
+
+// --- ファイル設定とデータ読み込み関連関数 ---
+
+/**
+ * ファイル設定を更新し、JSONデータの再読み込みを開始する
+ * @param {string} baseName - ファイル名のベース (mo or no)
+ * @param {number} total - 読み込むファイルの総数
+ */
+function setFileConfiguration(baseName, total) {
+    currentFileBaseName = baseName;
+    currentTotalFiles = total;
+    if (switchDataBtn) {
+        switchDataBtn.textContent = `現在のデータ: ${baseName.toUpperCase()}系 (${total}ファイル)`;
+    }
+    if (statusMessage) {
+        statusMessage.textContent = `データソースを ${baseName.toUpperCase()} 系に切り替え、再読み込みを開始します...`;
+    }
+    // データの再読み込み
+    loadAndIntegrateJson();
+}
+
+
+/**
+ * 指定されたファイル設定に基づいてJSONファイルを読み込み、データを統合する
+ */
+async function loadAndIntegrateJson() {
+    let rawDataArray = [];
+    
+    const loadingMsg = `JSONファイル (${currentFileBaseName}1.json ~ ${currentFileBaseName}${currentTotalFiles}.json) をフェッチ中...`;
+    container.innerHTML = `<div class="loading-message">${loadingMsg}</div>`;
+    downloadContainer.innerHTML = ''; // ロード中はダウンロードボタンを消去
+
+    try {
+        for (let i = 1; i <= currentTotalFiles; i++) {
+            const fileName = `${currentFileBaseName}${i}${fileExtension}`;
+            const url = basePath + fileName; 
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`🚨 ネットワーク/ファイル存在エラー: ${url}が見つからないか、読み込み失敗 (Status: ${response.status})。`);
+            }
+
+            const jsonContent = await response.json();
+
+            // ★修正: JSONが {history_structured_list: {regions: [...]}} の形式を想定
+            if (jsonContent && jsonContent.history_structured_list && Array.isArray(jsonContent.history_structured_list.regions)) {
+                 rawDataArray.push(...jsonContent.history_structured_list.regions);
+            } else if (Array.isArray(jsonContent)) {
+                 // 以前の形式（カテゴリー形式）の配列データを暫定的に処理する場合はロジックが必要だが、
+                 // 今回はご提供のデータ形式を優先し、エラーとして扱う。
+                 throw new Error(`ファイル「${fileName}」のデータ構造が期待された形式ではありませんでした。`);
+            } else {
+                 throw new Error(`ファイル「${fileName}」のデータ構造が期待された形式ではありませんでした (history_structured_listキーが見つかりません)。`);
+            }
+        }
+
+        // 複数のファイルから集めた regions の配列を統合
+        const finalIntegratedData = { history_structured_list: { regions: rawDataArray } };
+        integratedDataCache = finalIntegratedData;
+
+        // 成功時の処理
+        if (statusMessage) {
+            statusMessage.textContent = `✅ データソース: ${currentFileBaseName.toUpperCase()}系 (${currentTotalFiles}ファイル) の統合に成功しました。`;
+        }
+
+        displayData(finalIntegratedData); 
+        // 統合された全データをダウンロード可能にする
+        createDownloadButton(finalIntegratedData, false); 
+
+    } catch (error) {
+        console.error("統合処理の致命的エラー:", error);
+        container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>データソース:</strong> ${currentFileBaseName.toUpperCase()}系<br><strong>エラー内容:</strong> ${error.message}<br>※ JSONファイルがサーバーに存在し、有効な形式であることを確認してください。</div>`;
+        downloadContainer.innerHTML = ''; 
+        if (statusMessage) statusMessage.textContent = `❌ データの読み込みに失敗しました。エラー発生。`;
+    }
+}
+
+
+/**
+ * ダウンロードボタンを作成/更新する（全体版とフィルタリング版に対応）
+ * @param {object} dataToDownload - ダウンロード対象のデータ
+ * @param {boolean} isFiltered - フィルタリングされた結果かどうか
+ */
+function createDownloadButton(dataToDownload, isFiltered) {
+    downloadContainer.innerHTML = ''; 
+
+    const button = document.createElement('button');
+    button.id = 'download-button';
+    
+    // フィルタリング結果か、全統合データかでファイル名とラベルを分ける
+    const baseFileName = `history_${currentFileBaseName}`;
+    const fileSuffix = isFiltered ? '_filtered' : '_full';
+    const fileName = `${baseFileName}${fileSuffix}.json`;
+    
+    const buttonLabel = isFiltered 
+        ? '💾 検索結果をJSONでダウンロード' 
+        : `💾 統合JSONデータ (${currentFileBaseName.toUpperCase()}系 全${currentTotalFiles}ファイル) をダウンロード`;
+    
+    button.textContent = buttonLabel;
+
+    const jsonString = JSON.stringify(dataToDownload, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    button.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName; 
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url); 
+    };
+
+    downloadContainer.appendChild(button);
+}
+
+
+// --- 検索と表示関連関数 ---
+
+/**
+ * 現在の状態（検索クエリ、トグル、モード）に基づいて表示を更新する
+ */
 function refreshDisplayBasedOnCurrentState() {
     if (integratedDataCache) {
         const currentQuery = searchInput.value.trim();
         const filteredData = filterData(integratedDataCache, currentQuery); 
         displayData(filteredData);
+        
+        // ★修正: フィルタリング結果をダウンロード対象としてボタンを更新
+        // (integratedDataCache !== filteredData) はオブジェクト参照が異なるため常に true になるので、
+        // 検索クエリがあるかどうかで判断するのが安全
+        const isFiltered = currentQuery.length > 0;
+        createDownloadButton(filteredData, isFiltered); 
     }
 }
 
@@ -52,12 +202,14 @@ function performLocalSearch() {
     if (!originalQuery) {
         if (integratedDataCache) {
             displayData(integratedDataCache);
+            createDownloadButton(integratedDataCache, false); // 全体ダウンロードに戻す
         }
         searchButton.textContent = '検索開始';
         searchButton.onclick = performLocalSearch;
         return;
     }
 
+    // 括弧内の文字を抽出するロジック (Wikipedia検索用)
     const match = originalQuery.match(/[（\(](.+?)[）\)]/);
     const insideParentheses = match ? match[1].trim() : '';
     const outsideParentheses = originalQuery.replace(/[（\(].+?[）\)]/g, '').trim();
@@ -76,6 +228,7 @@ function performLocalSearch() {
     if (integratedDataCache) {
         const filteredData = filterData(integratedDataCache, originalQuery); 
         displayData(filteredData);
+        createDownloadButton(filteredData, true); // フィルタリング結果をダウンロード可能にする
     }
 
     searchButton.textContent = `📚 Wikipediaで "${finalSearchQuery}" を検索`; 
@@ -123,112 +276,33 @@ function filterData(data, query) {
         return filteredPeriods.length > 0 ? { ...region, periods: filteredPeriods } : null;
     }).filter(r => r !== null);
 
+    // 新しいフィルタリングされたデータ構造を返す
     return { history_structured_list: { regions: filteredRegions } };
 }
 
-function createDownloadButton(data) {
-    downloadContainer.innerHTML = ''; 
 
-    const button = document.createElement('button');
-    button.id = 'download-button';
-    button.textContent = '💾 統合JSONデータをダウンロード';
+// adaptPrefectureData はデータ構造の不整合を避けるため削除済
 
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
 
-    button.onclick = () => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'integrated_history_data.json'; 
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url); 
-    };
-
-    downloadContainer.appendChild(button);
-}
-
-function adaptPrefectureData(rawData) {
-    if (!Array.isArray(rawData)) {
-        rawData = [rawData];
-    }
-
-    const adaptedRegions = [{
-        region_id: 'JP_PREFECTURE_HISTORY',
-        region_name: '日本の行政区画と歴史',
-        periods: rawData.map((categoryBlock, index) => ({
-            period_id: `PERIOD_${index}`,
-            upper_level: categoryBlock.category_name, 
-            middle_level_entities: categoryBlock.list.map(item => {
-                const tags = [];
-                const detail = item.composition || item.capital || '';
-                if (detail) {
-                    tags.push(detail.length > 20 ? detail.substring(0, 20) + '...' : detail);
-                }
-                
-                return {
-                    name: item.name,
-                    tags: tags,
-                    wiki_link_query: item.name,
-                    composition: item.composition, 
-                    capital: item.capital
-                };
-            })
-        }))
-    }];
-
-    return { history_structured_list: { regions: adaptedRegions } };
-}
-
-async function loadAndIntegrateJson() {
-    let rawData = [];
-    container.innerHTML = `<div class="loading-message">JSONファイル (mo1.json) をフェッチ中...</div>`;
-
-    try {
-        for (let i = 1; i <= totalFiles; i++) {
-            const fileName = `${fileBaseName}${i}${fileExtension}`;
-            const url = basePath + fileName; 
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`🚨 ネットワーク/ファイル存在エラー: ${url}が見つからないか、読み込み失敗 (Status: ${response.status})。`);
-            }
-
-            const jsonContent = await response.json();
-            
-            if (Array.isArray(jsonContent)) {
-                rawData.push(...jsonContent);
-            } else if (jsonContent && (jsonContent.category_name || jsonContent.list)) {
-                 rawData.push(jsonContent);
-            } else {
-                 throw new Error(`ファイル「${fileName}」のデータ構造が期待された形式ではありませんでした。`);
-            }
-        }
-
-        const finalIntegratedData = adaptPrefectureData(rawData);
-        integratedDataCache = finalIntegratedData;
-
-        displayData(finalIntegratedData); 
-
-    } catch (error) {
-        console.error("統合処理の致命的エラー:", error);
-        container.innerHTML = `<div class="error-message">🚨 データの統合・読み込みに失敗しました 🚨<br><strong>エラー内容:</strong> ${error.message}<br>※ **mo1.json** がサーバーに存在し、有効なJSON形式であることを確認してください。</div>`;
-        downloadContainer.innerHTML = ''; 
-    }
-}
-
+/**
+ * データをHTML上に表示する
+ * @param {object} integratedData - 表示対象のデータ（フィルタリング後の可能性あり）
+ */
 function displayData(integratedData) {
     container.innerHTML = ''; 
-    const regions = integratedData.history_structured_list.regions;
+    // データがない場合の安全策
+    if (!integratedData || !integratedData.history_structured_list || !integratedData.history_structured_list.regions) {
+        container.innerHTML = '<p class="error-message">🚨 データを読み込むか、有効なデータ構造が見つかりませんでした。</p>';
+        return;
+    }
 
+    const regions = integratedData.history_structured_list.regions;
     const tagsVisible = tagToggleSwitch.checked;
 
     regions.forEach((region, regionIndex) => {
         const regionCard = document.createElement('div');
         regionCard.className = 'region-card';
-        
+
         const regionHeader = document.createElement('div');
         regionHeader.className = 'region-header';
         regionHeader.textContent = `地域 ${region.region_id}: ${region.region_name}`;
@@ -243,7 +317,7 @@ function displayData(integratedData) {
             const upperLevel = document.createElement('div');
             upperLevel.className = 'period-upper';
             upperLevel.textContent = period.upper_level;
-            
+
             let color;
             if (period.upper_level.includes('現在')) {
                  color = '#dc3545'; 
@@ -281,7 +355,7 @@ function displayData(integratedData) {
                         const tagSpan = document.createElement('span');
                         tagSpan.className = 'entity-tag';
                         tagSpan.textContent = tag;
-                        
+
                         if (period.upper_level.includes('現在')) {
                              tagSpan.style.backgroundColor = '#28a745'; 
                         } else {
