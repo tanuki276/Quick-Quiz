@@ -12,10 +12,20 @@
 <body>
     <header>
         <h1>liefantidia 3</h1>
-        <p>歴史上の国や地域など</p>
+        <p>地域・時代・エンティティで整理された履歴データを表示します。</p>
     </header>
 
     <div id="controls-container">
+        <div id="data-mode-container">
+            <span>データモード:</span>
+            <label>
+                <input type="radio" name="data-mode" value="mo" id="data-mode-mo" checked> 都道府県等
+            </label>
+            <label>
+                <input type="radio" name="data-mode" value="no" id="data-mode-no"> 歴史上の国等
+            </label>
+        </div>
+
         <input type="text" id="search-input" placeholder="検索">
         <button id="search-button">検索開始</button>
 
@@ -23,15 +33,15 @@
             <div id="search-mode-container">
                 <span>検索モード:</span>
                 <label>
-                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND (厳しい)
+                    <input type="radio" name="search-mode" value="AND" id="search-mode-and" checked> AND
                 </label>
                 <label>
-                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR (甘い)
+                    <input type="radio" name="search-mode" value="OR" id="search-mode-or"> OR 
                 </label>
             </div>
 
             <div id="tag-toggle-container">
-                <span>タグ表示:</span>
+                <span>情報表示:</span>
                 <label class="switch">
                     <input type="checkbox" id="tag-toggle-switch" checked>
                     <span class="slider"></span>
